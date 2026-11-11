@@ -263,7 +263,7 @@ function meetings() {
   const secs = [
     section('page-header', 'title the page', 'full-bleed', `<h1 id="meeting-documents">Meeting Documents</h1>\n<p>${pic(HERO, '')}</p>`),
     section('intro', 'say what the archive holds and where upcoming meetings are', 'contained',
-      `<p>Agendas, minutes, and handouts for the ${BRAND} and its committees. Choose a group and year, or search document titles.</p>\n<p>Looking for an upcoming meeting? See <a href="${LIVE}Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a>.</p>`),
+      `<p>Agendas, minutes, and handouts for the ${BRAND} and its committees. Choose a group and year, or search document titles.</p>\n<p>Looking for an upcoming meeting? See <a href="./meetings-upcoming.html">Current Meeting Documents</a>.</p>`),
     section('archive', 'let people find any past meeting document in two steps', 'stack',
       block('meeting-archive', [['<p><a href="/data/meetings.json">/data/meetings.json</a></p>']])),
   ];
@@ -290,3 +290,9 @@ fs.mkdirSync(path.join(OUT, 'fragments'), { recursive: true });
 fs.writeFileSync(path.join(OUT, 'fragments', 'nav.plain.html'), navHtml());
 fs.writeFileSync(path.join(OUT, 'fragments', 'footer.plain.html'), footerHtml());
 console.log(Object.keys(out).map((f) => f + ' ' + out[f].length).join('\n'));
+
+// authoring-only copies (<main> content) for DA / EDS ingestion
+fs.mkdirSync(path.join(OUT, 'plain'), { recursive: true });
+for (const [f, html] of Object.entries(out)) {
+  fs.writeFileSync(path.join(OUT, 'plain', f.replace('.html', '.plain.html')), html.slice(html.indexOf('<main>') + 7, html.indexOf('</main>')).trim() + '\n');
+}
