@@ -22,6 +22,57 @@ const endOf = ( m ) => new Date( m.end || `${m.date}T23:59` );
 const dayOf = ( m ) => new Date( `${m.date}T12:00:00` );
 
 /**
+ * Time zone definition for America/Chicago (US rules since 2007), required by RFC 5545
+ * for every TZID a calendar file references.
+ */
+const VTIMEZONE_CHICAGO = [
+	'BEGIN:VTIMEZONE', 'TZID:America/Chicago',
+	'BEGIN:DAYLIGHT', 'TZOFFSETFROM:-0600', 'TZOFFSETTO:-0500', 'TZNAME:CDT',
+	'DTSTART:19700308T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU', 'END:DAYLIGHT',
+	'BEGIN:STANDARD', 'TZOFFSETFROM:-0500', 'TZOFFSETTO:-0600', 'TZNAME:CST',
+	'DTSTART:19701101T020000', 'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU', 'END:STANDARD',
+	'END:VTIMEZONE',
+];
+
+/**
+ * Escapes a TEXT value (RFC 5545 section 3.3.11): backslash, semicolon, comma and line breaks.
+ * @param {string} value raw text
+ * @returns {string} escaped text
+ */
+const icsText = ( value ) => String( value )
+	.replace( /\\/g, '\\\\' )
+	.replace( /;/g, '\\;' )
+	.replace( /,/g, '\\,' )
+	.replace( /\r?\n/g, '\\n' );
+
+/**
+ * Folds a content line to at most 75 octets per line (RFC 5545 section 3.1).
+ * Continuation lines start with one space; multi-byte characters are never split.
+ * @param {string} line unfolded content line
+ * @returns {string} folded line
+ */
+function icsFold( line ) {
+	const encoder = new TextEncoder();
+	const parts = [];
+	let current = '';
+	let size = 0;
+	let limit = 75;
+	Array.from( line ).forEach( ( ch ) => {
+		const bytes = encoder.encode( ch ).length;
+		if ( size + bytes > limit ) {
+			parts.push( current );
+			current = '';
+			size = 0;
+			limit = 74; // the leading space of a continuation line counts toward 75
+		}
+		current += ch;
+		size += bytes;
+	} );
+	parts.push( current );
+	return parts.join( '\r\n ' );
+}
+
+/**
  * Builds a downloadable calendar entry (.ics) for a meeting.
  * @param {object} m meeting
  * @returns {string} data URL
@@ -32,14 +83,17 @@ function icsHref( m ) {
 		return s.length === 13 ? `${s}00` : s;
 	};
 	const lines = [
-		'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nebraska Children\'s Commission//Meetings//EN', 'BEGIN:VEVENT',
+		'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nebraska Children\'s Commission//Meetings//EN', 'CALSCALE:GREGORIAN',
+		...VTIMEZONE_CHICAGO,
+		'BEGIN:VEVENT',
 		`UID:${m.id}@childrens.nebraska.gov`, `DTSTAMP:${stamp( new Date().toISOString() )}Z`,
 		`DTSTART;TZID=America/Chicago:${stamp( m.start )}`, `DTEND;TZID=America/Chicago:${stamp( m.end )}`,
-		`SUMMARY:${m.group} meeting`, `LOCATION:${m.location.replace( /\n/g, ', ' )}`,
-		m.virtual_url ? `DESCRIPTION:${m.virtual_label || 'Join online'}: ${m.virtual_url}` : null,
+		`SUMMARY:${icsText( `${m.group} meeting` )}`,
+		`LOCATION:${icsText( m.location.replace( /\n/g, ', ' ) )}`,
+		m.virtual_url ? `DESCRIPTION:${icsText( `${m.virtual_label || 'Join online'}: ${m.virtual_url}` )}` : null,
 		'END:VEVENT', 'END:VCALENDAR',
-	].filter( Boolean );
-	return `data:text/calendar;charset=utf-8,${encodeURIComponent( lines.join( '\r\n' ) )}`;
+	].filter( Boolean ).map( icsFold );
+	return `data:text/calendar;charset=utf-8,${encodeURIComponent( `${lines.join( '\r\n' )}\r\n` )}`;
 }
 
 function renderMeeting( m, upcoming ) {
