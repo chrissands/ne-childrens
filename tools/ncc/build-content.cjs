@@ -38,6 +38,8 @@ const ASSETS = [
   ['tile-22.jpg', 'img/tiles/22.jpg'],
 ];
 
+const IMG_BASE = 'https://content.da.live/chrissands/ne-childrens/img/';
+
 // Data sheets, copied as-is (EDS sheet JSON; upcoming-meetings is a multi-sheet workbook).
 const DATA = ['meetings.json', 'upcoming-meetings.json'];
 
@@ -47,7 +49,9 @@ function rewrite(html) {
     if (!page) throw new Error(`Unknown relative link ${m}`);
     return `href="${page.path}${hash || ''}"`;
   });
-  out = out.replace(/https:\/\/childrens\.nebraska\.gov\/img\//g, '/img/');
+  // Images point at the copies uploaded to Document Authoring (same paths as on the old site).
+  // Edge Delivery ingests them from there; site-relative /img/ paths are not resolved.
+  out = out.replace(/https:\/\/childrens\.nebraska\.gov\/img\//g, IMG_BASE);
   const leftover = out.match(/(href|src|srcset)="\.\/[^"]*"/g);
   if (leftover) throw new Error(`Unrewritten relative refs: ${leftover.join(', ')}`);
   return out;
