@@ -1,0 +1,143 @@
+{
+ ":names": [
+  "meetings",
+  "documents"
+ ],
+ ":type": "multi-sheet",
+ ":version": 3,
+ "meetings": {
+  "total": 6,
+  "offset": 0,
+  "limit": 6,
+  "data": [
+   {
+    "id": "foster-care-reimbursement-rate-2026-10-05",
+    "group": "Foster Care Reimbursement Rate Committee",
+    "slug": "foster-care-reimbursement-rate",
+    "date": "2026-10-05",
+    "start": "2026-10-05T10:00",
+    "end": "2026-10-05T12:00",
+    "when": "10:00 AM to 12:00 PM",
+    "location": "Lower Level Otoe Conference\nNebraska State Office Building\n301 Centennial Mall South\nLincoln, NE 68509",
+    "virtual_url": "https://teams.microsoft.com/meet/237457023552898?p=HIUQimmHDsOMJ7jMvE",
+    "virtual_label": "Microsoft Teams Link"
+   },
+   {
+    "id": "bridge-to-independence-2026-10-06",
+    "group": "Bridge to Independence Advisory Committee",
+    "slug": "bridge-to-independence",
+    "date": "2026-10-06",
+    "start": "2026-10-06T09:30",
+    "end": "2026-10-06T12:30",
+    "when": "9:30 AM to 12:30 PM",
+    "location": "Lower Level Otoe Conference Room\nNebraska State Office Building\n301 Centennial Mall South\nLincoln, NE 68508",
+    "virtual_url": "https://teams.microsoft.com/meet/258468155258414?p=uMTBw5fLWzFIPpS2TB",
+    "virtual_label": "Microsoft Teams Link"
+   },
+   {
+    "id": "strengthening-families-act-2026-10-27",
+    "group": "Strengthening Families Act Committee",
+    "slug": "strengthening-families-act",
+    "date": "2026-10-27",
+    "start": "2026-10-27T14:00",
+    "end": "2026-10-27T16:00",
+    "when": "2:00 to 4:00 PM",
+    "location": "Lower Level Otoe Conference\nNebraska State Office Building\n301 Centennial Mall South\nLincoln, NE 68509",
+    "virtual_url": "",
+    "virtual_label": ""
+   },
+   {
+    "id": "ncc-2026-11-17",
+    "group": "Nebraska Children's Commission",
+    "slug": "ncc",
+    "date": "2026-11-17",
+    "start": "2026-11-17T09:00",
+    "end": "2026-11-17T15:00",
+    "when": "9:00 AM to 3:00 PM (CST)",
+    "location": "KVC Nebraska\n5001 Central Park Drive, #100\nLincoln, NE 68504",
+    "virtual_url": "",
+    "virtual_label": ""
+   },
+   {
+    "id": "alternative-response-2026-12-10",
+    "group": "Alternative Response Advisory Committee",
+    "slug": "alternative-response",
+    "date": "2026-12-10",
+    "start": "2026-12-10T10:00",
+    "end": "2026-12-10T12:00",
+    "when": "10:00 AM to 12:00 PM (CST)",
+    "location": "Tentatively: Lower Level Otoe Conference Room\nNebraska State Office Building\n301 Centennial Mall South\nLincoln, NE 68509",
+    "virtual_url": "",
+    "virtual_label": ""
+   },
+   {
+    "id": "juvenile-services-2027-01-28",
+    "group": "Juvenile Services Committee",
+    "slug": "juvenile-services",
+    "date": "2027-01-28",
+    "start": "2027-01-28T09:30",
+    "end": "2027-01-28T11:30",
+    "when": "9:30 AM to 11:30 AM (CDT)",
+    "location": "Virtual via Microsoft Teams\nOptional in-person location TBD",
+    "virtual_url": "",
+    "virtual_label": ""
+   }
+  ]
+ },
+ "documents": {
+  "total": 7,
+  "offset": 0,
+  "limit": 7,
+  "data": [
+   {
+    "meeting": "bridge-to-independence-2026-10-06",
+    "type": "agenda",
+    "title": "Agenda",
+    "url": "https://childrens.nebraska.gov/PDFs/MeetingDocuments/2026/B2i/10.06.2026/Handout%201%20-%20B2i%20Agenda%2010.06.2026.pdf",
+    "action": "yes"
+   },
+   {
+    "meeting": "bridge-to-independence-2026-10-06",
+    "type": "handout",
+    "title": "B2I Minutes (Draft) 07.21.2026",
+    "url": "https://childrens.nebraska.gov/PDFs/MeetingDocuments/2026/B2i/10.06.2026/Handout%202%20-%20B2I%20Minutes%20(Draft)%2007.21.2026.pdf",
+    "action": "yes"
+   },
+   {
+    "meeting": "foster-care-reimbursement-rate-2026-10-05",
+    "type": "agenda",
+    "title": "Agenda",
+    "url": "https://childrens.nebraska.gov/PDFs/MeetingDocuments/2026/FCRRC/10.05.2026/Handout%201%20-%20FCRRS%20Draft%20Agenda%2010.05.2026.pdf",
+    "action": "yes"
+   },
+   {
+    "meeting": "foster-care-reimbursement-rate-2026-10-05",
+    "type": "handout",
+    "title": "FCRRC Minutes (Draft) 06.25.2026",
+    "url": "https://childrens.nebraska.gov/PDFs/MeetingDocuments/2026/FCRRC/10.05.2026/Handout%202%20-%20FCRRC%20Minutes%20(Draft)%2006.25.2026.pdf",
+    "action": "yes"
+   },
+   {
+    "meeting": "foster-care-reimbursement-rate-2026-10-05",
+    "type": "handout",
+    "title": "Foster Care Reimbursement Rate Committee 2024 Report",
+    "url": "https://childrens.nebraska.gov/PDFs/Reports/FCRRC/Foster%20Care%20Reimbursement%20Rate%20Committee%202024%20Report%20(Final)%2006.26.2024).pdf",
+    "action": ""
+   },
+   {
+    "meeting": "strengthening-families-act-2026-10-27",
+    "type": "agenda",
+    "title": "Agenda",
+    "url": "https://childrens.nebraska.gov/PDFs/MeetingDocuments/2026/SFA/10.27.2026/Handout%201%20-%20SFA%20Agenda%20(Draft)%2010.27.2026.pdf",
+    "action": "yes"
+   },
+   {
+    "meeting": "strengthening-families-act-2026-10-27",
+    "type": "handout",
+    "title": "SFA Minutes (Draft) 11.13.2025",
+    "url": "https://childrens.nebraska.gov/PDFs/MeetingDocuments/2026/SFA/10.27.2026/Handout%202%20-%20SFA%20Minutes%20(Draft)%2011.13.2025.pdf",
+    "action": "yes"
+   }
+  ]
+ }
+}

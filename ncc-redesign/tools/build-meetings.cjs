@@ -21,7 +21,7 @@ const sheet = { total: data.length, offset: 0, limit: data.length, data, ':type'
 fs.mkdirSync(path.join(ROOT, 'out/data'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'out/data/meetings.json'), JSON.stringify(sheet));
 // redirects: old per-year pages -> filtered archive view; hubs -> archive
-const red = ['Source,Destination', '/Meetings/PastMeetingDocs.html,/meetings', '/Meetings/PastMeetingDocs,/meetings'];
+const red = ['Source,Destination', '/Meetings/PastMeetingDocs.html,/meetings', '/Meetings/PastMeetingDocs,/meetings', '/Meetings/CurrentMeetingDocs.html,/meetings/upcoming'];
 for (const p of raw.pageIdx) {
   const m = p.f.match(/PastMeetingDocs(.+?)(\d\d)\.html/); const [, code, yy] = m; const g = GROUPS[code];
   const year = (parseInt(yy, 10) < 50 ? '20' : '19') + yy;

@@ -55,6 +55,19 @@
       ],
       "data": "data/meetings.json",
       "redirects": "redirects/meeting-redirects.csv"
+    },
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html",
+      "html": "meetings-upcoming.html",
+      "authoring": "plain/meetings-upcoming.plain.html",
+      "targetPath": "/meetings/upcoming",
+      "template": "default",
+      "layout": null,
+      "customBlocks": [
+        "upcoming-meetings"
+      ],
+      "data": "data/upcoming-meetings.json",
+      "redirects": "redirects/meeting-redirects.csv (row /Meetings/CurrentMeetingDocs.html)"
     }
   ],
   "globalFragments": {
@@ -78,6 +91,22 @@
         "year",
         "q"
       ]
+    },
+    {
+      "name": "upcoming-meetings",
+      "code": "blocks/upcoming-meetings/upcoming-meetings.js",
+      "style": "blocks/upcoming-meetings/upcoming-meetings.css",
+      "data": "data/upcoming-meetings.json",
+      "dataFormat": "EDS multi-sheet workbook: sheet meetings (id, group, slug, date, start, end, when, location, virtual_url, virtual_label) and sheet documents (meeting, type, title, url, action)"
     }
-  ]
+  ],
+  "pathMapping": {
+    "./index.html": "/",
+    "./about.html": "/about",
+    "./publications.html": "/publications",
+    "./Legislative.html": "/Legislative",
+    "./ActiveSubgroups.html": "/ActiveSubgroups",
+    "./meetings.html": "/meetings",
+    "./meetings-upcoming.html": "/meetings/upcoming"
+  }
 }

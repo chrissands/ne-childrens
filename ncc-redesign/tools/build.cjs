@@ -270,8 +270,21 @@ function meetings() {
   return shell({ file: 'meetings.html', title: 'Meeting Documents', description: 'Agendas, minutes, and handouts for the Nebraska Children\'s Commission and its committees, 2012 to 2026.', template: 'default', sections: secs, blocks: ['meeting-archive'], data: { '/data/meetings.json': 'data/meetings.json' } });
 }
 
+/* ---------- UPCOMING MEETINGS (Current Meeting Documents) ---------- */
+function upcoming() {
+  const m = mainHtml('CurrentMeetingDocs.html');
+  const intro = rewriteLinks(m.match(/<h1[\s\S]*?<\/h1>\s*<p>([\s\S]*?)<\/p>/)[1], LIVE + 'Meetings/').replace(/\s+/g, ' ').trim();
+  const secs = [
+    section('page-header', 'title the page', 'full-bleed', `<h1 id="current-meeting-documents">Current Meeting Documents</h1>\n<p>${pic(HERO, '')}</p>`),
+    section('intro', 'explain when documents appear and where the archive is', 'contained', `<p>${intro}</p>`),
+    section('meetings', 'show what is coming up with place, time and documents', 'stack',
+      block('upcoming-meetings', [['<p><a href="/data/upcoming-meetings.json" data-archive="/meetings">/data/upcoming-meetings.json</a></p>']])),
+  ];
+  return shell({ file: 'meetings-upcoming.html', title: 'Current Meeting Documents', description: "Upcoming and recent meetings of the Nebraska Children's Commission and its committees, with place, time, agendas and handouts.", template: 'default', sections: secs, blocks: ['upcoming-meetings'], data: { '/data/upcoming-meetings.json': 'data/upcoming-meetings.json' } });
+}
+
 fs.mkdirSync(OUT, { recursive: true });
-const out = { 'index.html': home(), 'about.html': about(), 'publications.html': publications(), 'Legislative.html': legislative(), 'ActiveSubgroups.html': subgroups(), 'meetings.html': meetings() };
+const out = { 'index.html': home(), 'about.html': about(), 'publications.html': publications(), 'Legislative.html': legislative(), 'ActiveSubgroups.html': subgroups(), 'meetings.html': meetings(), 'meetings-upcoming.html': upcoming() };
 for (const [f, html] of Object.entries(out)) fs.writeFileSync(path.join(OUT, f), html);
 fs.mkdirSync(path.join(OUT, 'fragments'), { recursive: true });
 fs.writeFileSync(path.join(OUT, 'fragments', 'nav.plain.html'), navHtml());

@@ -1,6 +1,6 @@
 # Migration prompt: Nebraska Children's Commission
 
-Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this package as the target. Then build the new meeting archive (section below), which replaces 85 old pages with one page, one custom block and one data sheet.
+Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this package as the target. Then build the two meeting pages (sections below): the meeting archive, which replaces 85 old pages with one page, one custom block and one data sheet, and the upcoming-meetings page, which replaces Current Meeting Documents.
 
 ## Source pages (migrate these five)
 
@@ -17,10 +17,24 @@ Source pages replaced: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.h
 1. Add the custom block `blocks/meeting-archive/meeting-archive.js` and `.css` from this package to the Sower-based repo's `blocks/` folder. Follow the repo's lint rules; it imports only `toClassName` from `scripts/aem.js` and `domEl` from `scripts/dom-helpers.js`.
 2. Publish `data/meetings.json` as a sheet at `/data/meetings` (served as `/data/meetings.json`). Columns: group, slug, date, type, title, url, note. One row per document.
 3. Create `/meetings` from `plain/meetings.plain.html`. The block is authored as one link to `/data/meetings.json`.
-4. Load `redirects/meeting-redirects.csv` into the site's redirects sheet (86 rows: old URL to `/meetings?group=<slug>&year=<yyyy>`).
+4. Load `redirects/meeting-redirects.csv` into the site's redirects sheet (87 rows: old URL to `/meetings?group=<slug>&year=<yyyy>`).
 5. Verify: all 309 meetings and 1,809 documents are reachable; `?group=ncc&year=2019` shows 6 meetings and 88 documents; every document link opens the original PDF on childrens.nebraska.gov.
 
 The PDFs stay where they are. This migration only moves the pages, not the files.
+
+## Upcoming meetings (replaces Current Meeting Documents)
+
+Source page replaced: https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html. New path `/meetings/upcoming`.
+
+1. Add the custom block `blocks/upcoming-meetings/upcoming-meetings.js` and `.css` to the repo's `blocks/` folder (it imports only `domEl` from `scripts/dom-helpers.js`).
+2. Publish `data/upcoming-meetings.json` as a **multi-sheet** workbook at `/data/upcoming-meetings` with two sheets named `meetings` and `documents` (columns are in `README.md`).
+3. Create `/meetings/upcoming` from `plain/meetings-upcoming.plain.html`. The block is authored as one link to `/data/upcoming-meetings.json`.
+4. The redirect `/Meetings/CurrentMeetingDocs.html` to `/meetings/upcoming` is already in `redirects/meeting-redirects.csv`.
+5. Verify: meetings that have not ended appear under Upcoming, meetings that ended in the last 60 days under Recently held, and the Add to calendar link downloads a valid .ics. One agenda link from the old page was deliberately left out (see `README.md`); do not add it back.
+
+## Link paths
+
+Links between these pages are relative in the files. Map them with `pathMapping` in `manifest.json` (for example `./meetings.html` is `/meetings`).
 
 ## Target
 
@@ -52,7 +66,7 @@ Set `template`, `layout`, `theme`, `brandslug` ("Nebraska Children's Commission"
 
 ## Blocks used
 
-meeting-archive (custom, only on /meetings), hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
+meeting-archive (custom, only on /meetings), upcoming-meetings (custom, only on /meetings/upcoming), hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
 
 ## Rules
 
@@ -75,7 +89,7 @@ meeting-archive (custom, only on /meetings), hero-homepage (built automatically 
 
 ## Out of scope
 
-Current Meeting Documents, committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
+Committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
 
 ## Done means
 

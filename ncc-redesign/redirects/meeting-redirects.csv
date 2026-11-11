@@ -1,6 +1,7 @@
 Source,Destination
 /Meetings/PastMeetingDocs.html,/meetings
 /Meetings/PastMeetingDocs,/meetings
+/Meetings/CurrentMeetingDocs.html,/meetings/upcoming
 /Meetings/PastMeetingDocsAR20.html,/meetings?group=alternative-response&year=2020
 /Meetings/PastMeetingDocsAR21.html,/meetings?group=alternative-response&year=2021
 /Meetings/PastMeetingDocsAR22.html,/meetings?group=alternative-response&year=2022

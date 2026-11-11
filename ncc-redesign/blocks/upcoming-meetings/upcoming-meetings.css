@@ -1,0 +1,116 @@
+.upcoming-meetings {
+	--um-primary: var(--theme-hero-primary, #00607f);
+	--um-dark: var(--theme-card-heading, #003a4d);
+	--um-accent: var(--theme-card-accent, #ffc44d);
+	--um-line: #dfe1e2;
+}
+
+.upcoming-meetings__section + .upcoming-meetings__section {
+	margin-top: 2.5rem;
+}
+
+.upcoming-meetings__list {
+	list-style: none;
+	margin: 1rem 0 0;
+	padding: 0;
+	display: grid;
+	gap: 1rem;
+}
+
+.upcoming-meetings__item {
+	display: grid;
+	grid-template-columns: 4.5rem minmax(0, 1fr);
+	gap: 1.25rem;
+	margin: 0;
+	padding: 1.25rem;
+	background: #fff;
+	border: 1px solid var(--um-line);
+	border-top: 4px solid var(--um-accent);
+	border-radius: 0 0 .25rem .25rem;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+.upcoming-meetings__badge {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	align-self: start;
+	width: 4.5rem;
+	height: 4.5rem;
+	color: #fff;
+	background: var(--um-primary);
+	border-radius: .25rem;
+	line-height: 1;
+}
+
+.upcoming-meetings__month {
+	font-size: .8rem;
+	font-weight: 700;
+	letter-spacing: .08em;
+}
+
+.upcoming-meetings__day {
+	margin-top: .25rem;
+	font-size: 1.75rem;
+	font-weight: 700;
+}
+
+.upcoming-meetings__body > * {
+	margin-top: 0;
+	margin-bottom: .75rem;
+}
+
+.upcoming-meetings__body > :last-child {
+	margin-bottom: 0;
+}
+
+.upcoming-meetings__group {
+	margin-bottom: .25rem;
+	font-size: 1.35rem;
+	color: var(--um-dark);
+}
+
+.upcoming-meetings__when {
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: .75rem;
+	font-weight: 700;
+}
+
+.upcoming-meetings__time {
+	font-weight: 400;
+}
+
+.upcoming-meetings__where {
+	font-style: normal;
+}
+
+.upcoming-meetings__label {
+	margin-bottom: .25rem;
+	font-weight: 700;
+	color: var(--um-dark);
+}
+
+.upcoming-meetings__docs {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+
+.upcoming-meetings__legend {
+	margin-top: 1.5rem;
+	font-size: .95rem;
+	font-style: italic;
+}
+
+.upcoming-meetings__error {
+	padding: 1rem;
+	border-left: 4px solid #b50909;
+	background: #f4e3db;
+}
+
+@media (max-width: 479px) {
+	.upcoming-meetings__item {
+		grid-template-columns: 1fr;
+	}
+}

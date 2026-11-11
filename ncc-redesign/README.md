@@ -13,6 +13,7 @@ Design system: https://github.com/OCIOStateOfNebraska/stateofnebraska-aem (Sower
 | About us | `about.html` | `default` + `in-page-nav` | hero, in-page-navigation, table (col-header), summary-box |
 | Active subgroups | `ActiveSubgroups.html` | `default` | hero, info-card-grid (x2) |
 | Meeting archive (new) | `meetings.html` | `default` | hero, meeting-archive (custom) |
+| Upcoming meetings (new) | `meetings-upcoming.html` | `default` | hero, upcoming-meetings (custom) |
 
 - `plain/*.plain.html`: just the `<main>` content (sections and blocks), in the form DA / EDS ingests. Use these as the authoring source.
 - `fragments/nav.plain.html`, `fragments/footer.plain.html`: global header nav and footer (`header` and `footer-navigation` blocks).
@@ -78,3 +79,32 @@ Data decisions to review:
 - Links on the five earlier pages that pointed at Past Meeting Documents now point to `/meetings`.
 - Dates in the sheet are ISO (`YYYY-MM-DD`); the block formats them for display.
 - The block's filter and search run in the browser on the whole sheet (about 0.5 MB). That is fine at this size. If the archive grows past a few thousand meetings, move to a paged query.
+
+## Upcoming meetings (new, replaces Current Meeting Documents)
+
+`meetings-upcoming.html` (target path `/meetings/upcoming`) replaces `/Meetings/CurrentMeetingDocs.html`. The old page was a hand-edited stack of
+tables, and it had gone stale: three of its six meetings (Oct 5, 6 and 27, 2026) had already happened. The new page is driven by a workbook and
+sorts itself by date.
+
+| Piece | File |
+|---|---|
+| Page | `meetings-upcoming.html`, `plain/meetings-upcoming.plain.html` |
+| Block | `blocks/upcoming-meetings/` (`.js`, `.css`) |
+| Data | `data/upcoming-meetings.json`: EDS multi-sheet workbook. Publish as `/data/upcoming-meetings`. Sheet `meetings`: id, group, slug, date, start, end, when, location, virtual_url, virtual_label. Sheet `documents`: meeting (the id), type (agenda or handout), title, url, action (yes = shown in bold) |
+| Builder | `tools/build-upcoming.cjs` |
+| Redirect | `/Meetings/CurrentMeetingDocs.html` to `/meetings/upcoming` (in `redirects/meeting-redirects.csv`) |
+
+Behavior: meetings that have not ended show under "Upcoming meetings" (each with an Add to calendar file). Meetings that ended in the last 60 days show under
+"Recently held", so their documents stay reachable until they are added to the archive sheet. After 60 days they drop off. If nothing is upcoming, the page says so and links to the archive.
+Staff update the page by editing rows in the workbook; no page edits.
+
+Data decisions to review:
+- The source row for the Nov 17, 2026 Commission meeting has an agenda link with no link text that points to an **Alternative Response** agenda dated 09.17.2026. It looks like a mistake, so it is omitted. Confirm.
+- Group names follow the archive (for example "Bridge to Independence Advisory Committee"; the old page said "Subcommittee" and misspelled "Reimbursemsent").
+- Times, locations and Teams links are exactly as on the old page. The "and" between a room and a Teams link is not shown; the Teams link sits on its own line. Start and end times (used for sorting and the calendar file) were parsed from the displayed time; the calendar file uses the America/Chicago time zone.
+- The old intro paragraph is kept word for word. New interface text: "Upcoming meetings", "Recently held", "Meeting handouts" (this was a column heading on the old page), "Add to calendar".
+
+## Path mapping for links
+
+Links between pages in these files are relative. Final paths: `./index.html` is `/`, `./about.html` is `/about`, `./publications.html` is `/publications`, `./Legislative.html` is `/Legislative`,
+`./ActiveSubgroups.html` is `/ActiveSubgroups`, `./meetings.html` is `/meetings`, `./meetings-upcoming.html` is `/meetings/upcoming`. The same mapping is in `manifest.json` under `pathMapping`.

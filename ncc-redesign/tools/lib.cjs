@@ -5,7 +5,7 @@ const ROOT = path.resolve(__dirname, '..');
 const LIVE = 'https://childrens.nebraska.gov/';
 const SOWER = 'https://main--stateofnebraska-aem--ociostateofnebraska.aem.page';
 const PAGES = { '': 'index.html', 'index.html': 'index.html', 'publications.html': 'publications.html',
-  'legislative.html': 'Legislative.html', 'about.html': 'about.html', 'activesubgroups.html': 'ActiveSubgroups.html', 'meetings.html': 'meetings.html' };
+  'legislative.html': 'Legislative.html', 'about.html': 'about.html', 'activesubgroups.html': 'ActiveSubgroups.html', 'meetings.html': 'meetings.html', 'meetings-upcoming.html': 'meetings-upcoming.html' };
 
 const MEETING_SLUG = { ncc: 'ncc', ar: 'alternative-response', b2i: 'bridge-to-independence', fcrrc: 'foster-care-reimbursement-rate', jsc: 'juvenile-services', ojs: 'juvenile-services', locsc: 'level-of-care', meds: 'psychotropic-medication', sfa: 'strengthening-families-act', ntf: 'strengthening-families-act', normalcy: 'normalcy-task-force' };
 const decodeEnt = (s) => s.replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&rsquo;/g, '\u2019')
@@ -19,15 +19,16 @@ function mainHtml(name) {
   return h.slice(i, j);
 }
 // Resolve a legacy href to either a redesigned local page, or the live site.
-function fixHref(raw) {
+function fixHref(raw, base = LIVE) {
   let h = decodeEnt(raw.trim());
   if (/^(mailto:|#|tel:)/.test(h)) return h;
   let abs;
-  try { abs = new URL(h, LIVE); } catch (e) { return h; }
+  try { abs = new URL(h, base); } catch (e) { return h; }
   if (abs.hostname.replace(/^www\./, '') === 'childrens.nebraska.gov') {
     const key = abs.pathname.replace(/^\//, '').toLowerCase();
     if (PAGES[key] !== undefined && !abs.hash) return './' + PAGES[key];
     if (key === 'meetings/pastmeetingdocs.html') return './meetings.html';
+    if (key === 'meetings/currentmeetingdocs.html') return './meetings-upcoming.html';
     const my = key.match(/^meetings\/pastmeetingdocs(.+?)(\d\d)\.html$/);
     if (my && MEETING_SLUG[my[1]]) return './meetings.html?group=' + MEETING_SLUG[my[1]] + '&amp;year=20' + my[2];
   }
@@ -45,8 +46,8 @@ function links(html) { // [{href,text}] in document order
 const a = (l) => `<a href="${l.href}">${l.text}</a>`;
 const tidy = (s) => esc(s.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim());
 // rewrite hrefs inside a fragment of source html
-function rewriteLinks(html) {
-  return html.replace(/<a\b([^>]*?)href="([^"]*)"([^>]*)>/gi, (m, p1, h, p2) => `<a href="${fixHref(h)}">`)
+function rewriteLinks(html, base = LIVE) {
+  return html.replace(/<a\b([^>]*?)href="([^"]*)"([^>]*)>/gi, (m, p1, h, p2) => `<a href="${fixHref(h, base)}">`)
     .replace(/\s(target|style|class|align|width|border|bgcolor|onclick)="[^"]*"/gi, '');
 }
 function tables(html) { // returns [{ start, rows:[[cellHtml..]] }]

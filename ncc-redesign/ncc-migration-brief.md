@@ -1,6 +1,6 @@
 # Migration brief and page content: Nebraska Children's Commission
 
-Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this file as the target. Then build the new meeting archive (section below), which replaces 85 old pages with one page, one custom block and one data sheet.
+Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this file as the target. Then build the two meeting pages (sections below): the meeting archive, which replaces 85 old pages with one page, one custom block and one data sheet, and the upcoming-meetings page, which replaces Current Meeting Documents.
 
 ## Source pages (migrate these five)
 
@@ -17,10 +17,24 @@ Source pages replaced: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.h
 1. Add the custom block (code at the end of this file) to the Sower-based repo's `blocks/` folder. Follow the repo's lint rules; it imports only `toClassName` from `scripts/aem.js` and `domEl` from `scripts/dom-helpers.js`.
 2. Publish ncc-redesign/data/meetings.json from the repo as a sheet at `/data/meetings` (served as `/data/meetings.json`). Columns: group, slug, date, type, title, url, note. One row per document.
 3. Create `/meetings` from `plain/meetings.plain.html`. The block is authored as one link to `/data/meetings.json`.
-4. Load ncc-redesign/redirects/meeting-redirects.csv from the repo into the site's redirects sheet (86 rows: old URL to `/meetings?group=<slug>&year=<yyyy>`).
+4. Load ncc-redesign/redirects/meeting-redirects.csv from the repo into the site's redirects sheet (87 rows: old URL to `/meetings?group=<slug>&year=<yyyy>`).
 5. Verify: all 309 meetings and 1,809 documents are reachable; `?group=ncc&year=2019` shows 6 meetings and 88 documents; every document link opens the original PDF on childrens.nebraska.gov.
 
 The PDFs stay where they are. This migration only moves the pages, not the files.
+
+## Upcoming meetings (replaces Current Meeting Documents)
+
+Source page replaced: https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html. New path `/meetings/upcoming`.
+
+1. Add the custom block (code at the end of this file) to the repo's `blocks/` folder (it imports only `domEl` from `scripts/dom-helpers.js`).
+2. Publish ncc-redesign/data/upcoming-meetings.json from the repo as a **multi-sheet** workbook at `/data/upcoming-meetings` with two sheets named `meetings` and `documents` (columns are in `README.md`).
+3. Create `/meetings/upcoming` from `plain/meetings-upcoming.plain.html`. The block is authored as one link to `/data/upcoming-meetings.json`.
+4. The redirect `/Meetings/CurrentMeetingDocs.html` to `/meetings/upcoming` is already in `redirects/meeting-redirects.csv`.
+5. Verify: meetings that have not ended appear under Upcoming, meetings that ended in the last 60 days under Recently held, and the Add to calendar link downloads a valid .ics. One agenda link from the old page was deliberately left out (see `README.md`); do not add it back.
+
+## Link paths
+
+Links between these pages are relative in the files. Map them with `pathMapping` in `manifest.json` (for example `./meetings.html` is `/meetings`).
 
 ## Target
 
@@ -30,7 +44,7 @@ The PDFs stay where they are. This migration only moves the pages, not the files
 
 ## What this file contains
 
-This brief, then the authoring markup for each page, the shared nav and footer, and the code of the custom meeting-archive block. The meeting data sheet (about 0.5 MB) and the redirect list are in the repo at ncc-redesign/data/meetings.json and ncc-redesign/redirects/meeting-redirects.csv; they are too large to inline here.
+This brief, then the authoring markup for each page, the shared nav and footer, and the code of the two custom blocks. The data sheets (meetings.json about 0.5 MB, upcoming-meetings.json) and the redirect list are in the repo under ncc-redesign/data/ and ncc-redesign/redirects/; they are too large to inline. README.md and manifest.json in the same folder have the data column definitions and the link path mapping.
 
 ## Page-level settings
 
@@ -46,7 +60,7 @@ Set `template`, `layout`, `theme`, `brandslug` ("Nebraska Children's Commission"
 
 ## Blocks used
 
-meeting-archive (custom, only on /meetings), hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
+meeting-archive (custom, only on /meetings), upcoming-meetings (custom, only on /meetings/upcoming), hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
 
 ## Rules
 
@@ -69,7 +83,7 @@ meeting-archive (custom, only on /meetings), hero-homepage (built automatically 
 
 ## Out of scope
 
-Current Meeting Documents, committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
+Committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
 
 ## Done means
 
@@ -230,7 +244,7 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 
 ## meetings.html
 
-Source URL: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html (and 84 per-year pages; see redirects)
+Source URL: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html (and 84 per-year pages)
 Page metadata: template=default, theme=default, brandslug=Nebraska Children's Commission, copyrightslug=State of Nebraska, nav=/nav, footer=/footer
 
 ```html
@@ -247,6 +261,24 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 </div>
 ```
 
+## meetings-upcoming.html
+
+Source URL: https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html
+Page metadata: template=default, theme=default, brandslug=Nebraska Children's Commission, copyrightslug=State of Nebraska, nav=/nav, footer=/footer
+
+```html
+<div data-section="page-header" data-intent="title the page" data-layout="full-bleed">
+<h1 id="current-meeting-documents">Current Meeting Documents</h1>
+<p><picture><source type="image/jpeg" srcset="https://childrens.nebraska.gov/img/bg-image-new.jpg" media="(min-width: 600px)"><img loading="lazy" src="https://childrens.nebraska.gov/img/bg-image-new.jpg" alt=""></picture></p>
+</div>
+<div data-section="intro" data-intent="explain when documents appear and where the archive is" data-layout="contained">
+<p>Monthly meeting documents will be posted as soon as they are available for each committee. The location and meeting time for each meeting is listed below or can be found on the <a href="https://www.nebraska.gov/calendar/index.cgi">Nebraska Public Meeting Calendar</a>. Agendas, minutes, and other meeting documents for previous months can be found at <a href="./meetings.html">Past Meeting Documents</a></p>
+</div>
+<div data-section="meetings" data-intent="show what is coming up with place, time and documents" data-layout="stack">
+<div class="upcoming-meetings"><div><div><p><a href="/data/upcoming-meetings.json" data-archive="/meetings">/data/upcoming-meetings.json</a></p></div></div></div>
+</div>
+```
+
 ---
 
 # Global fragments
@@ -255,7 +287,7 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 
 ```html
 <div><p><picture><source type="image/png" srcset="https://childrens.nebraska.gov/img/ChildrensLogo.png" media="(min-width: 600px)"><img loading="lazy" src="https://childrens.nebraska.gov/img/ChildrensLogo.png" alt="Nebraska Children's Commission logo" width="125" height="125"></picture></p><p><a href="./index.html">Nebraska Children's Commission home</a></p><p><strong>Nebraska Children's Commission</strong></p></div>
-<div><ul><li><p>Meeting Info</p><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">Calendar</a></li><li><a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a></li><li><a href="./meetings.html">Past Meeting Documents</a></li></ul></li><li><p>Resources</p><ul><li><a href="./publications.html">Reports</a></li><li><a href="./Legislative.html">Legislative</a></li><li><a href="./meetings.html">Past Documents</a></li></ul></li><li><p>Subgroups</p><ul><li><a href="https://childrens.nebraska.gov/Committees/ARCommittee.html">Alternative Response (AR) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/B2ICommittee.html">Bridge to Independence (B2i) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/FCRateCommittee.html">Foster Care Reimbursement Rate Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/JuvenileServicesCommittee.html">Juvenile Services Committee (JSC)</a></li><li><a href="https://childrens.nebraska.gov/Committees/PsychotropicMedicationCommittee.html">Psychotropic Medication Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/SFACommittee.html">Strengthening Families Act Committee</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/CommunityOwnershipWorkgroup.html">Community Ownership of Child Well Being Workgroup</a></li><li><a href="https://childrens.nebraska.gov/Taskforces/LegalPartiesTaskforce.html">Legal Parties Taskforce</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/WorkforceWorkgroup.html">Workforce Workgroup</a></li><li><a href="./ActiveSubgroups.html">See All Active Groups</a></li><li><a href="https://childrens.nebraska.gov/ArchivedSubgroups.html">See All Archived Groups</a></li></ul></li><li><p><a href="./about.html">About Us</a></p></li><li><p>News</p><ul><li><a href="https://childrens.nebraska.gov/News/BillsOfInterest.html">Bills of Interest</a></li><li><a href="https://childrens.nebraska.gov/News/MembershipOpenings.html">Membership Openings</a></li></ul></li><li><p><a href="https://childrens.nebraska.gov/contact.html">Contact</a></p></li></ul></div>
+<div><ul><li><p>Meeting Info</p><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">Calendar</a></li><li><a href="./meetings-upcoming.html">Current Meeting Documents</a></li><li><a href="./meetings.html">Past Meeting Documents</a></li></ul></li><li><p>Resources</p><ul><li><a href="./publications.html">Reports</a></li><li><a href="./Legislative.html">Legislative</a></li><li><a href="./meetings.html">Past Documents</a></li></ul></li><li><p>Subgroups</p><ul><li><a href="https://childrens.nebraska.gov/Committees/ARCommittee.html">Alternative Response (AR) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/B2ICommittee.html">Bridge to Independence (B2i) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/FCRateCommittee.html">Foster Care Reimbursement Rate Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/JuvenileServicesCommittee.html">Juvenile Services Committee (JSC)</a></li><li><a href="https://childrens.nebraska.gov/Committees/PsychotropicMedicationCommittee.html">Psychotropic Medication Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/SFACommittee.html">Strengthening Families Act Committee</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/CommunityOwnershipWorkgroup.html">Community Ownership of Child Well Being Workgroup</a></li><li><a href="https://childrens.nebraska.gov/Taskforces/LegalPartiesTaskforce.html">Legal Parties Taskforce</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/WorkforceWorkgroup.html">Workforce Workgroup</a></li><li><a href="./ActiveSubgroups.html">See All Active Groups</a></li><li><a href="https://childrens.nebraska.gov/ArchivedSubgroups.html">See All Archived Groups</a></li></ul></li><li><p><a href="./about.html">About Us</a></p></li><li><p>News</p><ul><li><a href="https://childrens.nebraska.gov/News/BillsOfInterest.html">Bills of Interest</a></li><li><a href="https://childrens.nebraska.gov/News/MembershipOpenings.html">Membership Openings</a></li></ul></li><li><p><a href="https://childrens.nebraska.gov/contact.html">Contact</a></p></li></ul></div>
 <div><p><a href="https://www.nebraska.gov/search/">Search</a></p></div>
 ```
 
@@ -263,7 +295,7 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 
 ```html
 <div><div class="footer-navigation">
-<div><div><h2 id="meetings">Meetings</h2><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">The NCC Calendar</a></li><li><a href="https://www.nebraska.gov/calendar/index.cgi">Nebraska Public Meeting Calendar</a></li><li><a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a></li><li><a href="./meetings.html">Past Meeting Documents</a></li></ul></div>
+<div><div><h2 id="meetings">Meetings</h2><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">The NCC Calendar</a></li><li><a href="https://www.nebraska.gov/calendar/index.cgi">Nebraska Public Meeting Calendar</a></li><li><a href="./meetings-upcoming.html">Current Meeting Documents</a></li><li><a href="./meetings.html">Past Meeting Documents</a></li></ul></div>
 <div><h2 id="resources">Resources</h2><ul><li><a href="./publications.html">Publications and Reports</a></li><li><a href="./Legislative.html">Legislative</a></li><li><a href="https://childrens.nebraska.gov/News/BillsOfInterest.html">Bills of Interest</a></li></ul></div>
 <div><h2 id="subgroups">Subgroups</h2><ul><li><a href="./ActiveSubgroups.html">Active Subgroups</a></li><li><a href="https://childrens.nebraska.gov/ArchivedSubgroups.html">Archived Subgroups</a></li></ul></div>
 <div><h2 id="commission">Commission</h2><ul><li><a href="./about.html">About the NCC</a></li><li><a href="https://childrens.nebraska.gov/News/MembershipOpenings.html">Membership Openings</a></li><li><a href="https://childrens.nebraska.gov/MemberResources.html">Member Resources</a></li><li><a href="https://childrens.nebraska.gov/contact.html">Contact</a></li></ul></div></div>
@@ -666,6 +698,270 @@ export default async function decorate( block ) {
 
 	.meeting-archive__meeting:hover {
 		box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
+	}
+}
+```
+
+---
+
+# Custom block: upcoming-meetings
+
+## blocks/upcoming-meetings/upcoming-meetings.js
+
+```js
+import { domEl } from '../../scripts/dom-helpers.js';
+
+const RECENT_DAYS = 60;
+const MONTH = ( d ) => d.toLocaleDateString( 'en-US', { month: 'short' } ).toUpperCase();
+
+/**
+ * Fetches the workbook: sheet "meetings" (one row per meeting) and sheet "documents" (one row per file).
+ * @param {string} href authored link to the workbook
+ * @returns {Promise<Array>} meetings with their documents attached
+ */
+async function fetchMeetings( href ) {
+	const resp = await fetch( new URL( href, window.location.href ) );
+	if ( !resp.ok ) throw new Error( `upcoming-meetings: ${resp.status} for ${href}` );
+	const json = await resp.json();
+	const meetings = ( json.meetings && json.meetings.data ) || [];
+	const documents = ( json.documents && json.documents.data ) || [];
+	return meetings.map( ( m ) => ( { ...m, docs: documents.filter( ( d ) => d.meeting === m.id ) } ) );
+}
+
+/** @returns {Date} end of the meeting (end time, else end of that day) */
+const endOf = ( m ) => new Date( m.end || `${m.date}T23:59` );
+const dayOf = ( m ) => new Date( `${m.date}T12:00:00` );
+
+/**
+ * Builds a downloadable calendar entry (.ics) for a meeting.
+ * @param {object} m meeting
+ * @returns {string} data URL
+ */
+function icsHref( m ) {
+	const stamp = ( iso ) => {
+		const s = iso.replace( /[-:]/g, '' ).slice( 0, 15 );
+		return s.length === 13 ? `${s}00` : s;
+	};
+	const lines = [
+		'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Nebraska Children\'s Commission//Meetings//EN', 'BEGIN:VEVENT',
+		`UID:${m.id}@childrens.nebraska.gov`, `DTSTAMP:${stamp( new Date().toISOString() )}Z`,
+		`DTSTART;TZID=America/Chicago:${stamp( m.start )}`, `DTEND;TZID=America/Chicago:${stamp( m.end )}`,
+		`SUMMARY:${m.group} meeting`, `LOCATION:${m.location.replace( /\n/g, ', ' )}`,
+		m.virtual_url ? `DESCRIPTION:${m.virtual_label || 'Join online'}: ${m.virtual_url}` : null,
+		'END:VEVENT', 'END:VCALENDAR',
+	].filter( Boolean );
+	return `data:text/calendar;charset=utf-8,${encodeURIComponent( lines.join( '\r\n' ) )}`;
+}
+
+function renderMeeting( m, upcoming ) {
+	const day = dayOf( m );
+	const agenda = m.docs.filter( ( d ) => d.type === 'agenda' );
+	const handouts = m.docs.filter( ( d ) => d.type !== 'agenda' );
+	const docLink = ( d, cls = 'usa-link usa-link--pdf' ) => {
+		const attrs = { href: d.url, class: cls, target: '_blank' };
+		if ( d.type === 'agenda' ) {
+			attrs['aria-label'] = `${d.title}, ${m.group}, ${day.toLocaleDateString( 'en-US', { month: 'long', day: 'numeric', year: 'numeric' } )}`;
+		}
+		return domEl( 'a', attrs, d.action ? domEl( 'strong', {}, d.title ) : d.title );
+	};
+
+	const where = domEl( 'address', { class: 'upcoming-meetings__where' } );
+	m.location.split( '\n' ).filter( Boolean ).forEach( ( line, i ) => {
+		if ( i ) where.append( domEl( 'br' ) );
+		where.append( line );
+	} );
+
+	const body = domEl( 'div', { class: 'upcoming-meetings__body' },
+		domEl( 'h3', { class: 'upcoming-meetings__group' }, m.group ),
+		domEl( 'p', { class: 'upcoming-meetings__when' },
+			domEl( 'time', { datetime: m.start || m.date }, day.toLocaleDateString( 'en-US', {
+				weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+			} ) ),
+			m.when ? domEl( 'span', { class: 'upcoming-meetings__time' }, m.when ) : '' ),
+		where );
+	if ( m.virtual_url ) {
+		body.append( domEl( 'p', { class: 'upcoming-meetings__virtual' },
+			domEl( 'a', { href: m.virtual_url, class: 'usa-link usa-link--external', target: '_blank' }, m.virtual_label || 'Join online' ) ) );
+	}
+	if ( agenda.length ) {
+		body.append( domEl( 'p', { class: 'upcoming-meetings__agenda' }, ...agenda.map( ( d ) => docLink( d, 'usa-button usa-button--outline' ) ) ) );
+	}
+	if ( handouts.length ) {
+		body.append( domEl( 'p', { class: 'upcoming-meetings__label' }, 'Meeting handouts' ),
+			domEl( 'ul', { class: 'upcoming-meetings__docs usa-list' }, ...handouts.map( ( d ) => domEl( 'li', {}, docLink( d ) ) ) ) );
+	}
+	if ( upcoming && m.start && m.end ) {
+		body.append( domEl( 'p', { class: 'upcoming-meetings__cal' },
+			domEl( 'a', { href: icsHref( m ), download: `${m.id}.ics`, class: 'usa-link' }, 'Add to calendar' ) ) );
+	}
+	return domEl( 'li', { class: 'upcoming-meetings__item' },
+		domEl( 'div', { class: 'upcoming-meetings__badge', 'aria-hidden': 'true' },
+			domEl( 'span', { class: 'upcoming-meetings__month' }, MONTH( day ) ),
+			domEl( 'span', { class: 'upcoming-meetings__day' }, String( day.getDate() ) ) ),
+		body );
+}
+
+function section( id, heading, items, upcoming ) {
+	return domEl( 'section', { class: 'upcoming-meetings__section', 'aria-labelledby': id },
+		domEl( 'h2', { id }, heading ),
+		domEl( 'ol', { class: 'upcoming-meetings__list' }, ...items.map( ( m ) => renderMeeting( m, upcoming ) ) ) );
+}
+
+/**
+ * Upcoming and recent meetings, with agendas and handouts, from one workbook.
+ * Authoring: a single link to the workbook (e.g. /data/upcoming-meetings.json). Meetings move from
+ * "Upcoming" to "Recently held" on their own, and drop off after 60 days.
+ * @param {HTMLElement} block The block element
+ */
+export default async function decorate( block ) {
+	const link = block.querySelector( 'a' );
+	if ( !link ) return;
+	const archive = link.dataset.archive || '/meetings';
+	block.textContent = '';
+	let meetings;
+	try {
+		meetings = await fetchMeetings( link.href );
+	} catch ( e ) {
+		// eslint-disable-next-line no-console
+		console.error( e );
+		block.append( domEl( 'p', { class: 'upcoming-meetings__error' }, 'Meeting information is unavailable right now. Please try again later.' ) );
+		return;
+	}
+	const now = new Date();
+	const cutoff = new Date( now.getTime() - RECENT_DAYS * 86400000 );
+	const upcoming = meetings.filter( ( m ) => endOf( m ) >= now ).sort( ( a, b ) => a.date.localeCompare( b.date ) );
+	const recent = meetings.filter( ( m ) => endOf( m ) < now && endOf( m ) >= cutoff ).sort( ( a, b ) => b.date.localeCompare( a.date ) );
+
+	if ( upcoming.length ) block.append( section( 'um-upcoming', 'Upcoming meetings', upcoming, true ) );
+	else {
+		block.append( domEl( 'section', { class: 'upcoming-meetings__section' }, domEl( 'h2', {}, 'Upcoming meetings' ),
+			domEl( 'p', {}, 'No meetings are scheduled right now. Earlier meetings are in the ',
+				domEl( 'a', { href: archive, class: 'usa-link' }, 'meeting archive' ), '.' ) ) );
+	}
+	if ( recent.length ) block.append( section( 'um-recent', 'Recently held', recent, false ) );
+	if ( meetings.some( ( m ) => m.docs.some( ( d ) => d.action ) ) ) {
+		block.append( domEl( 'p', { class: 'upcoming-meetings__legend' }, 'Items noted in bold indicate potential action items' ) );
+	}
+}
+```
+
+## blocks/upcoming-meetings/upcoming-meetings.css
+
+```css
+.upcoming-meetings {
+	--um-primary: var(--theme-hero-primary, #00607f);
+	--um-dark: var(--theme-card-heading, #003a4d);
+	--um-accent: var(--theme-card-accent, #ffc44d);
+	--um-line: #dfe1e2;
+}
+
+.upcoming-meetings__section + .upcoming-meetings__section {
+	margin-top: 2.5rem;
+}
+
+.upcoming-meetings__list {
+	list-style: none;
+	margin: 1rem 0 0;
+	padding: 0;
+	display: grid;
+	gap: 1rem;
+}
+
+.upcoming-meetings__item {
+	display: grid;
+	grid-template-columns: 4.5rem minmax(0, 1fr);
+	gap: 1.25rem;
+	margin: 0;
+	padding: 1.25rem;
+	background: #fff;
+	border: 1px solid var(--um-line);
+	border-top: 4px solid var(--um-accent);
+	border-radius: 0 0 .25rem .25rem;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+.upcoming-meetings__badge {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	align-self: start;
+	width: 4.5rem;
+	height: 4.5rem;
+	color: #fff;
+	background: var(--um-primary);
+	border-radius: .25rem;
+	line-height: 1;
+}
+
+.upcoming-meetings__month {
+	font-size: .8rem;
+	font-weight: 700;
+	letter-spacing: .08em;
+}
+
+.upcoming-meetings__day {
+	margin-top: .25rem;
+	font-size: 1.75rem;
+	font-weight: 700;
+}
+
+.upcoming-meetings__body > * {
+	margin-top: 0;
+	margin-bottom: .75rem;
+}
+
+.upcoming-meetings__body > :last-child {
+	margin-bottom: 0;
+}
+
+.upcoming-meetings__group {
+	margin-bottom: .25rem;
+	font-size: 1.35rem;
+	color: var(--um-dark);
+}
+
+.upcoming-meetings__when {
+	display: flex;
+	flex-wrap: wrap;
+	column-gap: .75rem;
+	font-weight: 700;
+}
+
+.upcoming-meetings__time {
+	font-weight: 400;
+}
+
+.upcoming-meetings__where {
+	font-style: normal;
+}
+
+.upcoming-meetings__label {
+	margin-bottom: .25rem;
+	font-weight: 700;
+	color: var(--um-dark);
+}
+
+.upcoming-meetings__docs {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+
+.upcoming-meetings__legend {
+	margin-top: 1.5rem;
+	font-size: .95rem;
+	font-style: italic;
+}
+
+.upcoming-meetings__error {
+	padding: 1rem;
+	border-left: 4px solid #b50909;
+	background: #f4e3db;
+}
+
+@media (max-width: 479px) {
+	.upcoming-meetings__item {
+		grid-template-columns: 1fr;
 	}
 }
 ```
