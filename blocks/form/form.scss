@@ -1,0 +1,230 @@
+@use '../../styles/ne-global-imports' as *;
+@use 'sass:meta';
+@use 'sass:math';
+
+$block: 'form';
+
+// stylelint-disable-next-line scss/selector-nest-combinators
+.#{$block}.block {
+	&.full-width {
+
+		p, form, button {
+			max-width: 100%;
+		}
+	}
+	.form-message{
+		grid-column: span 12;
+
+		.usa-alert__body{
+			padding-left: units(7);
+		}
+	}
+}
+
+form {
+	&:not(.edit-mode) {
+		[data-visible='false'] {
+			display: none !important; // stylelint-disable-line declaration-no-important
+		}
+	} 
+}
+
+.form-wrapper {
+	@include meta.load-css('~uswds/uswds-form-controls/index'); // avoid affecting top search
+
+	margin-bottom: units($component-spacing-sm);
+
+	&__header-text {
+		@include u-padding-y(1.5);
+	}
+	
+	.usa-form {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: units(2.5) units(4);
+	}
+	
+	/* grid css */
+	.field-wrapper {
+		grid-column: span 12;
+
+		&.col-1 {
+			grid-column: span 1;
+		}
+
+		&.col-2 {
+			grid-column: span 2;
+		}
+
+		&.col-3 {
+			grid-column: span 3;
+		}
+
+		&.col-4 {
+			grid-column: span 4;
+		}
+
+		&.col-5 {
+			grid-column: span 5;
+		}
+
+		&.col-6 {
+			grid-column: span 6;
+		}
+
+		&.col-7 {
+			grid-column: span 7;
+		}
+
+		&.col-8 {
+			grid-column: span 8;
+		}
+
+		&.col-9 {
+			grid-column: span 9;
+		}
+
+		&.col-10 {
+			grid-column: span 10;
+		}
+
+		&.col-11 {
+			grid-column: span 11;
+		}
+
+		&.col-12 {
+			grid-column: span 12;
+		}
+		
+		button {
+			width: 100%;
+			max-width: fit-content
+		}
+	}
+	
+	.usa-form,
+	.usa-label,
+	.usa-input,
+	.usa-checkbox__label,
+	.usa-radio__label, 
+	.field-description,
+	.usa-hint {
+		font-size: size('body', 5);
+	}
+
+	.usa-checkbox__label,
+	.usa-radio__label {
+		&:before {
+			margin-top: math.div( ( line-height($theme-form-font-family, $theme-input-line-height) * font-size($theme-form-font-family, 'sm') - units( $theme-input-select-size ) ), 2 );
+		}
+	}
+
+	.captcha-wrapper {
+		display: none ;
+	}
+	
+	.field-description {
+		@include u-font-weight('bold');
+		margin-top: units(.5);
+		color: color('error-dark');
+
+		p {
+			@include u-font-weight('normal');
+			color: color('base-dark');
+			font-size: size('body', 5);
+		}
+	}
+	
+	fieldset { // due to classes in aem forms, I need to override spacing for chrome 
+		margin-top: units(3) !important; // stylelint-disable-line declaration-no-important
+		
+		legend {
+			margin-top: 0 !important; // stylelint-disable-line declaration-no-important
+		}
+	}
+
+	.panel-wrapper {
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: units(2.5) units(4);
+	}
+
+	/* Repeatable panels — ported from adobe-rnd/aem-boilerplate-forms.
+	   repeat.js builds a bare `.repeat-wrapper` with no field-wrapper/col-* class,
+	   so without these rules it collapses into a single 1/12-width grid column. */
+	.repeat-wrapper {
+		grid-column: span 12;
+		display: grid;
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+		gap: units(2.5) units(4);
+	}
+
+	.repeat-actions {
+		grid-column: span 12;
+		order: 2;
+	}
+
+	.item-add,
+	.item-remove {
+		overflow: unset;
+	}
+
+	.item-remove {
+		justify-self: end;
+		grid-column: span 12;
+		order: 1;
+	}
+
+	[data-variant='addDeleteButtons'] {
+		.item-add,
+		.item-remove {
+			display: block;
+		}
+	}
+
+	@media (width <= 599px) {
+		// tighten the column gutter on small screens (OOTB drops horz gap to ~10px)
+		.usa-form,
+		.panel-wrapper,
+		.repeat-wrapper {
+			gap: units(2.5) units(1.5);
+		}
+	}
+
+	/* Responsive tiers — Adobe Adaptive Forms panel-layout guidance.
+	   Universal Editor exposes no responsive UI, and the OOTB grid keeps col-*
+	   spans proportional at every width, so the documented Desktop/Tablet/Mobile
+	   behavior is implemented here in CSS.
+	     • Desktop (>= desktop-lg / 1200px): default grid — col-* panels side-by-side.
+	     • Tablet (< 1200px): side-by-side panels stack; fields keep their columns.
+	     • Mobile (<= tablet / 639px): single column — every field is full width.
+	   Each rule targets the col-* classes directly so it beats their specificity
+	   (ties break on source order, and these come last). */
+
+	@include at-media-max('desktop-lg') {
+		.panel-wrapper {
+			&[class*='col-'] {
+				grid-column: 1 / -1;
+			}
+		}
+	}
+
+	@include at-media-max('tablet') {
+		.field-wrapper {
+			&[class*='col-'] {
+				grid-column: 1 / -1;
+			}
+		}
+	}
+}
+
+// stylelint-disable-next-line scss/selector-nest-combinators
+.#{$block}.block.full-width {
+	// Gives control to form editor to determine layout of fields
+	p, 
+	form, 
+	button,
+	.field-label {
+		max-width: 100%;
+	}
+}

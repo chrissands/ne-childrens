@@ -1,306 +1,340 @@
-/**
- * header block
- * Based on USWDS usa-header component
- *
- * @see https://designsystem.digital.gov/components/header/
- */
-
-import { getMetadata, decorateBlock, loadBlock } from '../../scripts/aem.js';
+import { getMetadata, decorateBlock, loadBlock, buildBlock } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
+import { a, domEl } from '../../scripts/dom-helpers.js';
+import { header, accordion } from '../../scripts/deps/bundle-uswds.js';
+import { getIndividualIcon, isSameDomainOrSubdomain, fetchPlaceholders } from '../../scripts/utils.js';
 
-/**
- * Decorates the nav content into USWDS structure
- * @param {Element} header The header block element
- * @param {Element} fragment The loaded fragment
- */
-async function decorateNav(header, fragment) {
-  const sections = fragment.querySelectorAll(':scope > div');
-  const [brandSection, navSection, toolsSection] = sections;
+async function decorateSkipnav( placeholders ) {
+	const { skipnav } = placeholders;
+	const skipNav = a( { class: 'usa-skipnav', href: '#main-content', id: 'skip' }, skipnav ? skipnav : 'Skip to main content' );
+	return skipNav;
+}
 
-  // Apply header variant from metadata (supports both 'header' and 'header-variant')
-  const variant = getMetadata('header') || getMetadata('header-variant') || 'basic';
+async function loadBanner() {
+	const bannerWrapper = domEl( 'div', { class: 'banner-wrap' } );
+	const bannerBlock = buildBlock( 'banner', '' );
 
-  // Use the parent <header> element instead of creating a new one
-  // EDS auto-blocks create a <header> wrapper, we just add USWDS classes to it
-  const usaHeader = header.parentElement;
-  usaHeader.className = `usa-header usa-header--${variant}`;
+	bannerWrapper.appendChild( bannerBlock );
+	decorateBlock( bannerBlock );
+	return loadBlock( bannerBlock );
+}
 
-  // Create nav-container wrapper (for basic/megamenu variants only)
-  let navContainer;
-  if (variant === 'basic' || variant === 'megamenu') {
-    navContainer = document.createElement('div');
-    navContainer.className = 'usa-nav-container';
-  }
+// Store all dropdown references for alignment checking
+const dropdownRegistry = [];
 
-  // Extended variant needs nav__inner wrapper
-  let navInner;
-  if (variant === 'extended') {
-    navInner = document.createElement('div');
-    navInner.className = 'usa-nav__inner';
-  }
+function checkDropdownAlignment( dropdown ) {
+	if ( !dropdown || dropdown.hasAttribute( 'hidden' ) || dropdown.classList.contains( 'usa-megamenu' ) ) return;
 
-  // Create navbar (logo/brand section)
-  const navbar = document.createElement('div');
-  navbar.className = 'usa-navbar';
+	const navInner = dropdown.closest( '.usa-nav__inner' );
+	if ( !navInner ) return;
+	
+	// Naturally left aligned (via CSS)
+	dropdown.style.left = '';
+	dropdown.style.right = '';
+	const dropdownRect = dropdown.getBoundingClientRect();
 
-  if (brandSection) {
-    const logoDiv = document.createElement('div');
-    logoDiv.className = 'usa-logo';
+	const containerRect = navInner.getBoundingClientRect();
 
-    // Check for image (logo)
-    const img = brandSection.querySelector('img');
+	// Check if dropdown extends beyond right edge of container
+	if ( dropdownRect.right > containerRect.right ) {
+		dropdown.style.left = 'auto';
+		// Align to right edge of related button
+		const button = dropdown.previousElementSibling;
+		const buttonOffset = button.offsetParent.getBoundingClientRect().right - button.getBoundingClientRect().right;
+		dropdown.style.right = buttonOffset + 'px';
+	}
+}
 
-    // Check for text (brand name) - prioritize headings, skip image-only paragraphs
-    let textContent = '';
-    const headingEl = brandSection.querySelector('h1, h2, h3, h4, h5, h6');
-    if (headingEl) {
-      textContent = headingEl.textContent.trim();
-    } else {
-      // Try other text elements, but filter out ones that only contain images
-      const textElements = Array.from(brandSection.querySelectorAll('p, strong, em, span, a'));
-      const validTextEl = textElements.find((el) => {
-        const text = el.textContent.trim();
-        // Skip elements that are empty or only contain an image
-        return text && !el.querySelector('img, picture');
-      });
+function checkAllDropdownAlignments() {
+	dropdownRegistry.forEach( ( { dropdown, parent } ) => {
+		if ( !dropdown.hasAttribute( 'hidden' ) ) {
+			checkDropdownAlignment( dropdown, parent );
+		}
+	} );
+}
 
-      if (validTextEl) {
-        textContent = validTextEl.textContent.trim();
-      } else {
-        // Final fallback: get text directly from the section, excluding images
-        const clone = brandSection.cloneNode(true);
-        const cloneImgs = clone.querySelectorAll('img, picture');
-        cloneImgs.forEach((imgEl) => imgEl.remove());
-        textContent = clone.textContent.trim();
-      }
-    }
+async function createSubMenu( subMenu, id ) {
+	let listItem = subMenu.querySelectorAll( 'ul > li' );
+	if ( listItem.length > 0 ) {
+		const button = domEl( 'button', { class: 'usa-accordion__button usa-nav__link', type: 'button', 'aria-expanded': false, 'aria-controls': 'extended-mega-nav-section-' + id } );
+		const span = domEl( 'span', {}, subMenu.firstElementChild.innerHTML );
+		button.append( span );
+		subMenu.prepend( button );
+		subMenu.querySelector( 'p' ).remove();
 
-    // Build logo structure with image and/or text
-    if (img) {
-      // Logo with image
-      const imgLink = document.createElement('a');
-      imgLink.href = '/';
-      imgLink.title = textContent || 'Home';
-      const logoImg = document.createElement('img');
-      logoImg.className = 'usa-logo__img';
-      logoImg.src = img.src;
-      logoImg.alt = img.alt || textContent || '';
-      imgLink.appendChild(logoImg);
-      logoDiv.appendChild(imgLink);
-    }
+		const linkCount = listItem.length;
+		let itemsPerColumn = linkCount;
+		let isMegaMenu = false;
 
-    if (textContent) {
-      // Logo text/brand name
-      const textLink = document.createElement('a');
-      textLink.href = '/';
-      textLink.className = 'usa-logo__text';
-      textLink.textContent = textContent;
-      logoDiv.appendChild(textLink);
-    }
+		if ( linkCount >= 2 && linkCount <= 8 ) {
+			itemsPerColumn = linkCount; // 1 column
+		} else if ( linkCount >= 9 && linkCount <= 12 ) {
+			itemsPerColumn = Math.ceil( linkCount / 2 ); // 2 columns
+		} else if ( linkCount > 12 ) {
+			itemsPerColumn = Math.ceil( linkCount / 4 ); // 4 columns
+			isMegaMenu = true;
+		}
 
-    navbar.appendChild(logoDiv);
-  }
+		const subNav = domEl( 'div', { id: 'extended-mega-nav-section-' + id, class: 'usa-nav__submenu', hidden: true } );
 
-  // Create mobile menu button
-  const menuBtn = document.createElement('button');
-  menuBtn.type = 'button';
-  menuBtn.className = 'usa-menu-btn';
-  menuBtn.textContent = 'Menu';
-  navbar.appendChild(menuBtn);
+		if ( isMegaMenu ) {
+			subNav.classList.add( 'usa-megamenu' );
+		}
 
-  // Create nav container
-  const nav = document.createElement('nav');
-  nav.className = 'usa-nav';
+		const grid = domEl( 'div', { class: 'grid-row grid-gap-4' } );
+		subNav.append( grid );
+		subMenu.append( subNav );
 
-  // Create close button for mobile
-  const closeBtn = document.createElement('button');
-  closeBtn.type = 'button';
-  closeBtn.className = 'usa-nav__close';
-  const closeImg = document.createElement('img');
-  closeImg.src = '/icons/usa-icons-bg/close--white.svg';
-  closeImg.alt = 'Close';
-  closeBtn.appendChild(closeImg);
+		let column = '';
+		let ul = '';
+		for ( const [index, element] of listItem.entries() ) {
+			if ( index % itemsPerColumn === 0 ) {
+				column = domEl( 'div', { class: 'grid-col' } );
+				ul = domEl( 'ul', { class: 'usa-nav__submenu-list'} );
+				column.append( ul );
+				grid.append( column );
+			}
+			ul.append( element );
+			element.classList.add( 'usa-nav__submenu-item' );
+			let link = element.querySelector( 'a' );
+			if ( link.classList.contains( 'usa-button' ) ) { // remove extra wrapper if there is one
+				element.append( link );
+				link.className = '';
+				element.querySelector( '.usa-button__wrap' ).remove();
+			}
+		}
 
-  // Create primary navigation
-  const primaryNav = document.createElement('ul');
-  primaryNav.className = 'usa-nav__primary usa-accordion';
+		// Register this dropdown for alignment checking
+		dropdownRegistry.push( { dropdown: subNav, parent: subMenu } );
 
-  if (navSection) {
-    const navList = navSection.querySelector('ul');
-    if (navList) {
-      const navItems = navList.querySelectorAll(':scope > li');
-      navItems.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.className = 'usa-nav__primary-item';
+		// Check alignment when dropdown is opened
+		button.addEventListener( 'click', () => {
+			// Finish the event stack, then check
+			setTimeout( () => {
+				if ( !subNav.hasAttribute( 'hidden' ) ) {
+					checkDropdownAlignment( subNav, subMenu );
+				}
+			}, 1 );
+		} );
+	} else {
+		subMenu.prepend( subMenu.firstElementChild.firstElementChild );
+		subMenu.lastElementChild.remove();
+		subMenu.firstElementChild.classList.add( 'usa-nav__link' );
+		subMenu.firstElementChild.classList.remove( 'usa-button' );
+		const isExternal = !isSameDomainOrSubdomain( subMenu.firstElementChild.getAttribute( 'href' ) );
+		
+		if( isExternal ) {
+			const externalLink = domEl( 'span', {} );
+			subMenu.firstElementChild.append( externalLink );
+			getIndividualIcon( subMenu.querySelector( 'span' ), 'launch' );
+		}
+	} 
+	if ( subMenu.querySelector( 'ul' ) ) subMenu.querySelector( 'ul' ).remove();
+}
 
-        // Check if item has submenu (nested ul) or is a simple link
-        const submenu = item.querySelector('ul');
-        const link = item.querySelector(':scope > p > a');
+function createSecondaryMenu( innerMenu, searchResultsUrl, showDropdowns ) {
+	const url = new URL( window.location );
+	const domain = url.origin;
+	const input = domEl( 'input', { class: 'usa-input usa-text-input', id: 'search-field', type: 'search', name: 'q', required: 'required' } );
+	const img = domEl( 'img', { class: 'usa-search__submit-icon', alt: 'Submit Search', src: `${domain}/icons/usa-icons/search.svg` } );
+	const searchButton = domEl( 'button', { class: 'usa-button', type: 'submit' } );
+	searchButton.append( img );
+	const label = domEl( 'label', { class: 'usa-sr-only', for: 'search-field' }, 'Search this website' );
+	const form = domEl( 'form', { class: 'usa-search usa-search--small', role: 'search', action: searchResultsUrl } );
 
-        if (submenu && !link) {
-          // This is an accordion item with submenu
-          const title = item.querySelector(':scope > p');
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'usa-accordion__button usa-nav__link';
-          button.setAttribute('aria-expanded', 'false');
-          button.setAttribute('aria-controls', `nav-section-${index}`);
+	form.append( label );
+	form.append( input );
+	form.append( searchButton );
 
-          const span = document.createElement('span');
-          span.textContent = title ? title.textContent : 'Section';
-          button.appendChild(span);
+	const secondaryNav = domEl( 'div', { class: 'usa-nav__secondary' } );
+	let searchHeader;
+	if ( !showDropdowns ) {
+		searchHeader = domEl( 'p', { class: 'usa-nav__search-header' }, 'Search' );
+		secondaryNav.append( searchHeader );
+	}
+	secondaryNav.append( form );
+	innerMenu.append( secondaryNav );
 
-          const submenuUl = document.createElement('ul');
-          submenuUl.id = `nav-section-${index}`;
-          submenuUl.className = 'usa-nav__submenu';
-          submenuUl.setAttribute('hidden', '');
+	const closeImage = domEl( 'img', { role: 'img', alt: 'Close', src: '../../icons/usa-icons/close.svg' } );
+	const closeButton = domEl( 'button', { class: 'usa-nav__close', type: 'button' } );
+	closeButton.setAttribute( 'aria-label', 'Close primary navigation' );
+	closeButton.setAttribute( 'aria-controls', 'mobile-nav' );
+	closeButton.append( closeImage );
+	innerMenu.prepend( closeButton );
+	return secondaryNav;
+}
 
-          const submenuItems = submenu.querySelectorAll(':scope > li');
-          submenuItems.forEach((subitem) => {
-            const subLi = document.createElement('li');
-            subLi.className = 'usa-nav__submenu-item';
-            const subLink = subitem.querySelector('a');
-            if (subLink) {
-              const newLink = document.createElement('a');
-              newLink.href = subLink.href;
-              const linkSpan = document.createElement('span');
-              linkSpan.textContent = subLink.textContent;
-              newLink.appendChild(linkSpan);
-              subLi.appendChild(newLink);
-            }
-            submenuUl.appendChild(subLi);
-          });
+async function loadAndDecorateNav() {
+	const navMeta = getMetadata( 'nav' );
+	const navPath = navMeta ? new URL( navMeta, window.location ).pathname : '/nav';
+	const navFragment = await loadFragment( navPath );
+	const innerNav = domEl( 'div', { class: 'usa-nav__inner' } );
 
-          li.appendChild(button);
-          li.appendChild(submenuUl);
+	if ( !navFragment ) return innerNav;
 
-          // Note: USWDS JavaScript handles accordion interactions automatically
-        } else if (link) {
-          // Simple link item
-          const navLink = document.createElement('a');
-          navLink.href = link.href;
-          navLink.className = 'usa-nav__link';
-          const linkSpan = document.createElement('span');
-          linkSpan.textContent = link.textContent;
-          navLink.appendChild(linkSpan);
-          li.appendChild(navLink);
-        }
+	// Set up single resize listener for all dropdowns
+	let resizeTimeout;
+	const debouncedCheckAlignment = () => {
+		clearTimeout( resizeTimeout );
+		resizeTimeout = setTimeout( checkAllDropdownAlignments, 150 );
+	};
+	window.addEventListener( 'resize', debouncedCheckAlignment, { passive: true } );
 
-        primaryNav.appendChild(li);
-      });
-    }
-  }
+	let navChildren = navFragment.children;
+	const showDropdowns = navChildren.length > 2;
+	
+	if ( showDropdowns ) {
+		for ( const element of navChildren ) {
+			if ( element.getElementsByTagName( 'ul' ).length > 0 ) {
+				let ulList = element.getElementsByTagName( 'ul' );
+				innerNav.append( ulList[0] );
+				break;
+			}
+		}
+		innerNav.firstElementChild.classList.add( 'usa-nav__primary' );
+		innerNav.firstElementChild.classList.add( 'usa-accordion' );
+		
+		innerNav.querySelectorAll( '.usa-nav__primary > li' ).forEach( ( primaryItem, index ) => {
+			primaryItem.classList.add( 'usa-nav__primary-item' );
+			createSubMenu( primaryItem, index );
+		} );
+	}
 
-  // For extended variant, add secondary nav section
-  let secondaryNav;
-  if (variant === 'extended') {
-    secondaryNav = document.createElement('div');
-    secondaryNav.className = 'usa-nav__secondary';
+	// get url for search results page
+	const searchLink = navFragment.querySelector( 'div.section:last-child a' );
+	const searchResultsUrl = searchLink ? searchLink.href : '/search-results';
 
-    // Process secondary links from tools section
-    const secondaryLinks = document.createElement('ul');
-    secondaryLinks.className = 'usa-nav__secondary-links';
+	const secondaryNav = createSecondaryMenu( innerNav, searchResultsUrl, showDropdowns );
+	const nav = domEl( 'nav', { class: 'usa-nav', 'aria-label': 'Primary navigation', id: 'mobile-nav' } );
+	nav.append( innerNav );
+	const container = domEl( 'div', { class: 'usa-nav-container' } );
+	const navClass = `usa-header usa-header--extended${!showDropdowns ? ' usa-header--small' : '' }`;
+	const navWrapper = domEl( 'div', { class: navClass } );
+	container.append( nav );
+	const picture = navChildren[0].querySelector( 'picture' );
+	const link = navChildren[0].querySelector( 'a' );
+	if ( picture && link ) {
+		link.textContent = '';
+		link.className = '';
+		link.append( picture );
+	}
 
-    if (toolsSection) {
-      // Find all links in tools section that are NOT in the search block
-      const links = toolsSection.querySelectorAll('a');
-      links.forEach((link) => {
-        // Skip if this link is inside the search block
-        if (!link.closest('.search')) {
-          const li = document.createElement('li');
-          li.className = 'usa-nav__secondary-item';
-          const newLink = document.createElement('a');
-          newLink.href = link.href;
-          newLink.textContent = link.textContent;
-          li.appendChild(newLink);
-          secondaryLinks.appendChild(li);
-        }
-      });
-    }
+	// Toggle aria-expanded tag on menu btn
+	function toggleAriaExpanded (){
+		let expanded = nav.classList.contains( 'is-visible' );
+		menu.setAttribute( 'aria-expanded', !expanded );
+	}
 
-    secondaryNav.appendChild(secondaryLinks);
-  }
+	const img = domEl( 'div', { class: 'usa-logo__img' }, link );
 
-  // Add search block if present in tools section
-  if (toolsSection) {
-    const searchBlock = toolsSection.querySelector('.search');
-    if (searchBlock) {
-      // Decorate and load the search block
-      decorateBlock(searchBlock);
-      await loadBlock(searchBlock);
+	const logo = domEl( 'div', { class: 'usa-logo' } );
+	logo.append( img );
+	const logoTagLines = [...navFragment.querySelectorAll( '.default-content-wrapper p' )]
+		.filter( ( p ) => !p.classList.contains( 'usa-button__wrap' ) && p.textContent.trim().length > 0 );
 
-      // Wrap search in a section with aria-label
-      const searchSection = document.createElement('section');
-      searchSection.setAttribute('aria-label', 'Search component');
-      searchSection.appendChild(searchBlock);
+	if ( logoTagLines.length > 0 ) {
+		const logoTextWrap = domEl( 'div', { class: 'usa-logo__text-wrap' } );
+		const pipe = domEl( 'span', { class: 'usa-logo__pipe', 'aria-hidden': 'true' } );
+		const logoTextDiv = domEl( 'div', { class: 'usa-logo__text' }, logoTagLines[0], logoTagLines[1] ? logoTagLines[1] : '' ); // Get up to 2 tag lines
+		logoTextWrap.append( pipe, logoTextDiv );
+		logo.append( logoTextWrap );
+	}
+	const navBar = domEl( 'div', { class: 'usa-navbar' } );
+	navBar.append( logo );
+	const menuButton = domEl( 'button', { class: 'usa-menu-btn', type: 'button' } );
+	navBar.append( menuButton );
+	let menu = navBar.querySelector( '.usa-menu-btn' );
+	menu.innerHTML = 'Menu';
+	menu.setAttribute( 'aria-label', 'Open primary navigation' );
+	menu.setAttribute( 'aria-controls', 'mobile-nav' );
+	menu.setAttribute( 'aria-expanded', 'false' );
 
-      // For extended variant, add search to secondary nav; otherwise add directly to nav
-      if (secondaryNav) {
-        secondaryNav.appendChild(searchSection);
-      } else {
-        nav.appendChild(searchSection);
-      }
-    }
-  }
+	const desktopMQ = window.matchMedia( '(min-width: 64em)' );
+	function placeSearch(){
+		if ( desktopMQ.matches ) {
+			navBar.insertBefore( secondaryNav, menuButton );
+		} else {
+			innerNav.append( secondaryNav );
+		}
+	}
+	placeSearch();
+	desktopMQ.addEventListener( 'change', placeSearch );
 
-  // Assemble nav structure based on variant
-  if (navInner) {
-    // Extended variant: wrap primary nav and secondary nav in nav__inner
-    navInner.appendChild(closeBtn);
-    navInner.appendChild(primaryNav);
-    if (secondaryNav) {
-      navInner.appendChild(secondaryNav);
-    }
-    nav.appendChild(navInner);
-  } else {
-    // Basic variant: add elements directly to nav
-    nav.appendChild(closeBtn);
-    nav.appendChild(primaryNav);
-  }
+	const closeButton = nav.querySelector( 'button' );
+	menu.addEventListener( 'click', () => toggleAriaExpanded() );
+	closeButton.addEventListener( 'click', () => toggleAriaExpanded() );
 
-  // Note: USWDS JavaScript handles all menu interactions automatically
-  // including: mobile menu toggle, accordion dropdowns, click-outside,
-  // escape key, and keyboard navigation
+	container.prepend( navBar );
+	navWrapper.append( container );
+	return navWrapper;
+}
 
-  // Clear the block content (EDS adds a default wrapper)
-  header.textContent = '';
+async function loadAndDecorateAlert() {
+	const alertMeta = getMetadata( 'alert' );
+	if ( !alertMeta ) { return null; }
 
-  // Assemble final header structure
-  if (navContainer) {
-    // Basic/megamenu variants: use nav-container wrapper
-    navContainer.appendChild(navbar);
-    navContainer.appendChild(nav);
-    header.appendChild(navContainer);
-  } else {
-    // Extended variant: add navbar and nav directly to block
-    header.appendChild(navbar);
-    header.appendChild(nav);
-  }
+	const alertPath = new URL( alertMeta, window.location ).pathname;
+	const alertFragment = await loadFragment( alertPath );
+
+	const alerts = alertFragment.querySelectorAll( '.alert-wrapper' );
+	const alertContainer = domEl( 'div', { class: 'alert-container' } );
+
+	// Adjust state classes that the block added - they're applied differently and are more on the global alerts
+	Array.from( alerts ).forEach( wrap => {
+		const alertEle = wrap.querySelector( '.usa-alert' );
+		alertEle.parentNode.classList.add( 'usa-site-alert' );
+		if ( alertEle.classList.contains( 'usa-alert--emergency' ) ) {
+			alertEle.classList.remove( 'usa-alert--emergency' );
+			alertEle.parentNode.classList.add( 'usa-site-alert--emergency' );
+		} 
+		else if ( alertEle.classList.contains( 'usa-alert--warning' ) ) {
+			alertEle.classList.remove( 'usa-alert--warning' );
+			alertEle.parentNode.classList.add( 'usa-site-alert--warning' );
+		} 
+		else if ( alertEle.classList.contains( 'usa-alert--error' ) ) {
+			alertEle.classList.remove( 'usa-alert--error' );
+			alertEle.parentNode.classList.add( 'usa-site-alert--error' );
+		}
+		else if ( alertEle.classList.contains( 'usa-alert--success' ) ) {
+			alertEle.classList.remove( 'usa-alert--success' );
+			alertEle.parentNode.classList.add( 'usa-site-alert--success' );
+		}
+		else {
+			alertEle.classList.remove( 'usa-alert--info' );
+			alertEle.parentNode.classList.add( 'usa-site-alert--info' );
+		}
+
+		alertEle.classList.remove( 'usa-alert--no-icon', 'usa-alert--slim' );
+
+		alertContainer.append( wrap );
+	} );
+
+	return alerts.length && alertContainer;
 }
 
 /**
- * Decorates the header block
+ * loads and decorates the header, including nav and global alerts
  * @param {Element} block The header block element
  */
-export default async function decorate(block) {
-  // Automatically add banner above header (USWDS pattern)
-  // The banner should be a sibling to the <header> element, not inside it
-  const headerElement = block.parentElement; // This is the <header> tag
-  const bannerBlock = document.createElement('div');
-  bannerBlock.className = 'banner block';
-  bannerBlock.setAttribute('data-block-name', 'banner');
+export default async function decorate( block ) {
+	document.querySelector( 'header' ).setAttribute( 'aria-hidden', 'false' ); 
+	const placeholders = await fetchPlaceholders();
 
-  // Insert banner before the <header> element in the DOM
-  headerElement.parentElement.insertBefore(bannerBlock, headerElement);
+	const skipNav = await decorateSkipnav( placeholders );
+	const alertEle = await loadAndDecorateAlert( block );
+	const bannerEle = await loadBanner();
+	const navEle = await loadAndDecorateNav();
 
-  // Now decorate and load the banner block
-  decorateBlock(bannerBlock);
-  await loadBlock(bannerBlock);
+	block.innerHTML = '';
+	const overLay = domEl( 'div', { class: 'usa-overlay' } );
+	block.append( skipNav );
+	if ( alertEle ) { block.append( alertEle ); }
+	block.appendChild( bannerEle );
+	block.appendChild( overLay );
+	block.appendChild( navEle );
 
-  // Load the nav content from fragment
-  const navPath = getMetadata('nav') || '/nav/header';
-  const fragment = await loadFragment(navPath);
+	accordion.on();
+	header.on();
 
-  // Decorate the fragment into USWDS structure
-  await decorateNav(block, fragment);
+	return block;
 }

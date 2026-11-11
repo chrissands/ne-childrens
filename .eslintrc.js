@@ -1,43 +1,59 @@
+/* eslint-disable no-undef */
 module.exports = {
-  root: true,
-  extends: 'airbnb-base',
-  env: {
-    browser: true,
-  },
-  parser: '@babel/eslint-parser',
-  parserOptions: {
-    allowImportExportEverywhere: true,
-    sourceType: 'module',
-    requireConfigFile: false,
-  },
-  rules: {
-    'import/extensions': ['error', { js: 'always' }], // require js file extensions in imports
-    'linebreak-style': ['error', 'unix'], // enforce unix linebreaks
-    'no-param-reassign': [2, { props: false }], // allow modifying properties of param
-    'import/no-cycle': 0, // Allow modules to use each other
-  },
-  overrides: [
-    {
-      // USWDS-generated block files
-      files: ['blocks/*/*.js'],
-      rules: {
-        'import/no-unresolved': ['error', {
-          ignore: ['^@uswds/'], // Allow USWDS imports
-        }],
-      },
-    },
-    {
-      // Build scripts and configuration files
-      files: ['scripts/**/*.js', '*.config.js', 'uswds.config.js'],
-      rules: {
-        'no-console': 'off', // Console output needed for build logs
-        'import/no-extraneous-dependencies': 'off', // Build tools in devDependencies
-        'no-restricted-syntax': 'off', // Allow for...of loops in build scripts
-        'no-await-in-loop': 'off', // Sequential operations needed in build
-        'no-use-before-define': 'off', // Function hoisting common in scripts
-        'no-continue': 'off', // Control flow in loops
-        'no-param-reassign': 'off', // Param manipulation in utilities
-      },
-    },
-  ],
+	root: true,
+	extends: [
+		'eslint:recommended',
+		'plugin:json/recommended',
+		'plugin:xwalk/recommended',
+	],
+	env: {
+		browser: true,
+		'es6': true,
+	},
+	parser: '@babel/eslint-parser',
+	parserOptions: {
+		allowImportExportEverywhere: true,
+		sourceType: 'module',
+		requireConfigFile: false,
+	},
+	rules: {
+		indent: [1, 'tab', { SwitchCase: 1 }],
+		'no-undefined': [0],
+		'linebreak-style': [1, 'unix'],
+		quotes: [1, 'single'],
+		semi: [1, 'always'],
+		'space-in-parens': [1, 'always'],
+		'no-console': [0],
+		'no-alert': [1],
+		camelcase: [1],
+		'xwalk/max-cells': ['error', {
+			'*': 6, // default limit for all models
+			form: 19,
+			wizard: 13,
+			'form-button': 9,
+			'checkbox-group': 22,
+			checkbox: 21,
+			'date-input': 23,
+			'drop-down': 21,
+			email: 24,
+			'file-input': 24,
+			'form-fragment': 17,
+			'form-image': 9,
+			'multiline-input': 25,
+			'number-input': 24,
+			panel: 19,
+			'radio-group': 22,
+			'form-reset-button': 9,
+			'form-submit-button': 9,
+			'telephone-input': 22,
+			'text-input': 25,
+			accordion: 16,
+			modal: 13,
+			rating: 20,
+			password: 22,
+			tnc: 14,
+		}],
+		'xwalk/no-orphan-collapsible-fields': 'off', // Disable until enhancement is done for Forms properties
+		'xwalk/no-custom-resource-types': 'off',
+	},
 };

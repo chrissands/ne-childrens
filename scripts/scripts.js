@@ -1,436 +1,725 @@
 import {
-  buildBlock,
-  loadHeader,
-  loadFooter,
-  decorateButtons,
-  decorateIcons,
-  decorateBlocks,
-  decorateTemplateAndTheme,
-  getMetadata,
-  waitForFirstImage,
-  loadSection,
-  loadSections,
-  loadCSS,
-  sampleRUM,
-  readBlockConfig,
-  toClassName,
-  toCamelCase,
+	buildBlock,
+	loadHeader,
+	loadFooter,
+	readBlockConfig,
+	toCamelCase,
+	toClassName,
+	decorateBlock,
+	decorateTemplateAndTheme,
+	getMetadata,
+	waitForFirstImage,
+	loadSection,
+	loadSections,
+	loadCSS,
+	loadBlock,
 } from './aem.js';
+import { getIndividualIcon, isFullWidthTemplate, isSameDomainOrSubdomain } from './utils.js';
+import { div, domEl } from './dom-helpers.js';
+
+// variable for caching site index
+window.siteIndexCache = window.siteIndexCache || {};
 
 /**
- * Auto-generates a side nav from page headings and prepends it as the first section.
- * Called only when body has the `sidenav-left` template class.
+ * Decorates all blocks in a container element.
  * @param {Element} main The container element
  */
-function buildSideNavLeft(main) {
-  const headings = [...main.querySelectorAll('h2, h3')];
-  if (!headings.length) return;
-
-  // Assign IDs to headings so the nav links can anchor to them
-  headings.forEach((h) => {
-    if (!h.id) h.id = toClassName(h.textContent.trim());
-  });
-
-  // Build USWDS sidenav structure with h2 → items, h3 → subitems
-  const ul = document.createElement('ul');
-  ul.className = 'usa-sidenav';
-
-  const allLinks = [];
-  let currentItem = null;
-  let currentSublist = null;
-
-  headings.forEach((h) => {
-    const a = document.createElement('a');
-    a.href = `#${h.id}`;
-    a.textContent = h.textContent.trim();
-    allLinks.push(a);
-
-    if (h.tagName === 'H2') {
-      const li = document.createElement('li');
-      li.className = 'usa-sidenav__item';
-      li.append(a);
-      ul.append(li);
-      currentItem = li;
-      currentSublist = null;
-    } else {
-      if (!currentSublist) {
-        currentSublist = document.createElement('ul');
-        currentSublist.className = 'usa-sidenav__sublist';
-        if (currentItem) currentItem.append(currentSublist);
-        else ul.append(currentSublist);
-      }
-      const li = document.createElement('li');
-      li.className = 'usa-sidenav__sublist-item';
-      li.append(a);
-      currentSublist.append(li);
-    }
-  });
-
-  const navBlock = buildBlock('side-nav', [[ul]]);
-  const navSection = document.createElement('div');
-  navSection.append(navBlock);
-  main.prepend(navSection);
-
-  // Scroll spy: highlight the nav link for the heading currently in view
-  requestAnimationFrame(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            allLinks.forEach((l) => l.classList.remove('usa-current'));
-            const active = allLinks.find((l) => l.getAttribute('href') === `#${entry.target.id}`);
-            if (active) active.classList.add('usa-current');
-          }
-        });
-      },
-      { rootMargin: '-10% 0px -80% 0px', threshold: 0 },
-    );
-    headings.forEach((h) => observer.observe(h));
-  });
+function decorateBlocks( main ) {
+	main.querySelectorAll( 'div.section > div:not(.section-background__image) > div' ).forEach( decorateBlock );
 }
-
 
 /**
- * Sa11y Accessibility Checker - Sidekick Toggle Plugin
- * Injects/removes Sa11y when the Accessibility button is clicked.
- * https://sa11y.netlify.app/
- */
-const SA11Y_VERSION = '4';
-const SA11Y_CSS_URL = `https://cdn.jsdelivr.net/gh/ryersondmp/sa11y@${SA11Y_VERSION}/dist/css/sa11y.min.css`;
-const SA11Y_LANG_URL = `https://cdn.jsdelivr.net/gh/ryersondmp/sa11y@${SA11Y_VERSION}/dist/js/lang/en.umd.js`;
-const SA11Y_JS_URL = `https://cdn.jsdelivr.net/gh/ryersondmp/sa11y@${SA11Y_VERSION}/dist/js/sa11y.umd.min.js`;
-
-let sa11yActive = false;
-let sa11yLoaded = false;
-
-function injectCSS(url, id) {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById(id)) { resolve(); return; }
-    const link = document.createElement('link');
-    link.id = id;
-    link.rel = 'stylesheet';
-    link.href = url;
-    link.onload = resolve;
-    link.onerror = () => reject(new Error('Failed to load Sa11y CSS'));
-    document.head.appendChild(link);
-  });
-}
-
-function injectScript(url, id) {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById(id)) { resolve(); return; }
-    const script = document.createElement('script');
-    script.id = id;
-    script.src = url;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('Failed to load Sa11y script'));
-    document.head.appendChild(script);
-  });
-}
-
-async function loadSa11y() {
-  if (sa11yLoaded) return;
-
-  await injectCSS(SA11Y_CSS_URL, 'sa11y-injected-styles');
-  await injectScript(SA11Y_LANG_URL, 'sa11y-lang-script');
-  await new Promise((r) => { setTimeout(r, 100); });
-  await injectScript(SA11Y_JS_URL, 'sa11y-main-script');
-
-  // Wait for Sa11y to be available
-  await new Promise((resolve, reject) => {
-    let attempts = 0;
-    const check = () => {
-      attempts += 1;
-      if (window.Sa11y && window.Sa11yLangEn) resolve();
-      else if (attempts > 50) reject(new Error('Sa11y load timeout'));
-      else setTimeout(check, 100);
-    };
-    check();
-  });
-
-  window.Sa11y.Lang.addI18n(window.Sa11yLangEn.strings);
-  sa11yLoaded = true;
-}
-
-async function startSa11y() {
-  if (sa11yActive) return;
-
-  try {
-    await loadSa11y();
-
-    window.sa11yInstance = new window.Sa11y.Sa11y({
-      checkRoot: 'main, [role="main"], .main-content, body',
-      containerIgnore: '.sidekick-library, .hlx-sk, #hlx-sk, [data-aue-type], .aue-edit',
-      showGoodLinkButton: true,
-      showHinPageOutline: true,
-      detectPageLanguage: true,
-      panelPosition: 'left',
-    });
-
-    sa11yActive = true;
-    // eslint-disable-next-line no-console
-    console.log('[Sa11y] Started');
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('[Sa11y] Error starting:', error);
-  }
-}
-
-function stopSa11y() {
-  if (!sa11yActive) return;
-
-  try {
-    if (window.sa11yInstance) {
-      try { window.sa11yInstance.destroy(); } catch (e) { /* ignore */ }
-      delete window.sa11yInstance;
-    }
-
-    // Remove Sa11y UI elements (keep scripts/styles loaded for re-use)
-    [
-      '#sa11y-container', '#sa11y-panel', '#sa11y-toast-container',
-      '#sa11y-control-panel', '.sa11y-annotation', '.sa11y-instance',
-    ].forEach((sel) => {
-      document.querySelectorAll(sel).forEach((el) => {
-        try { el.remove(); } catch (e) { /* ignore */ }
-      });
-    });
-
-    // Remove Sa11y custom elements (web components with shadow DOM)
-    [
-      'sa11y-control-panel', 'sa11y-panel', 'sa11y-annotation',
-      'sa11y-heading-label', 'sa11y-heading-anchor', 'sa11y-tooltips',
-    ].forEach((tagName) => {
-      document.querySelectorAll(tagName).forEach((el) => {
-        try { el.remove(); } catch (e) { /* ignore */ }
-      });
-    });
-
-    sa11yActive = false;
-    // eslint-disable-next-line no-console
-    console.log('[Sa11y] Stopped');
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('[Sa11y] Error stopping:', error);
-  }
-}
-
-function toggleSa11y() {
-  if (sa11yActive) {
-    stopSa11y();
-  } else {
-    startSa11y();
-  }
-}
-
-// Listen for sidekick sa11y event
-function initSa11ySidekick() {
-  const sk = document.querySelector('aem-sidekick');
-  if (sk) {
-    sk.addEventListener('custom:sa11y', toggleSa11y);
-  } else {
-    document.addEventListener('sidekick-ready', () => {
-      document.querySelector('aem-sidekick')?.addEventListener('custom:sa11y', toggleSa11y);
-    }, { once: true });
-  }
-}
-
-initSa11ySidekick();
-
-
-/**
- * Builds hero block and prepends to main in a new section.
+ * Builds hero block and prepends to main.
  * @param {Element} main The container element
+ * @param {String} templateName The name of the template
  */
-function buildHeroBlock(main) {
-  const h1 = main.querySelector('h1');
-  const picture = main.querySelector('picture');
-  // eslint-disable-next-line no-bitwise
-  if (h1 && picture && (h1.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_PRECEDING)) {
-    const section = document.createElement('div');
-    section.append(buildBlock('hero', { elems: [picture, h1] }));
-    main.prepend(section);
-  }
+function buildHeroBlock( main, templateName ) {
+	const h1 = main.querySelector( 'h1' );
+	let heroSection;
+	if ( h1 ) {
+		heroSection = h1.closest( '.section' );
+	}
+	const multipleSections = main.querySelectorAll( '.section' ).length > 1;
+
+	let picture = null;
+	let video = null;
+	// If there are no sections delineated, everything is in the hero section
+	// homepage always grabs the first image (it's required)
+	if ( heroSection && ( multipleSections || templateName === 'homepage' ) ) {
+		picture = heroSection.querySelector( 'picture' );
+		const videoLink = heroSection.querySelector( 'a' )?.href?.endsWith( 'mp4' ) 
+		|| heroSection.querySelector( 'a' )?.href?.endsWith( 'mov' )
+		|| heroSection.querySelector( 'a' )?.href?.endsWith( 'mkv' )
+		|| heroSection.querySelector( 'a' )?.href?.endsWith( 'avi' )
+		|| heroSection.querySelector( 'a' )?.href?.endsWith( 'webm' )
+		|| heroSection.querySelector( 'a' )?.href?.endsWith( 'wmv' );
+
+		if( videoLink ) {			
+			video = domEl( 'video', { autoplay: '', muted: '', loop: '', playsinline: '', defaultMuted: '', preload:'none' },
+				domEl( 'source', { src: heroSection.querySelector( 'a' ).href } )
+			);
+			heroSection.querySelector( 'a' ).remove();
+		}
+	}
+
+	const container = document.createElement( 'div' );
+	let heroBlock;
+	if ( templateName === 'homepage' ) {
+		let desc;
+		if ( heroSection && multipleSections ) {
+			desc = heroSection.querySelectorAll( 'p, ul, ol' );
+		}
+		heroBlock = buildBlock( 'hero-homepage', { elems: [picture || video, h1, ...desc] } );
+
+		if( !heroSection.textContent.trim().length ) {
+			heroSection.remove();
+		}
+	} else {
+		heroBlock = buildBlock( 'hero', { elems: [picture || video, h1, ] } );
+	}
+	container.appendChild( heroBlock );
+	main.prepend( container );
+	decorateBlock( heroBlock );
+	loadBlock( heroBlock );
 }
 
 /**
- * load fonts.css and set a session storage flag
+ * Add <svg> for icon, prefixed with codeBasePath and optional prefix.
+ * @param {Element} [span] span element with icon classes
  */
-async function loadFonts() {
-  await loadCSS(`${window.hlx.codeBasePath}/styles/fonts.css`);
-  try {
-    if (!window.location.hostname.includes('localhost')) sessionStorage.setItem('fonts-loaded', 'true');
-  } catch (e) {
-    // do nothing
-  }
+function decorateIcon( span ) {
+	let iconName = Array.from( span.classList )
+		.find( ( c ) => c.startsWith( 'icon-' ) )
+		.substring( 5 );
+	let google = false;
+	if ( iconName.startsWith( 'g-' ) ) {
+		iconName = iconName.substring( 2 );
+		google = true;
+	}
+
+	getIndividualIcon( span, iconName, google );
 }
 
-function autolinkModals(doc) {
-  doc.addEventListener('click', async (e) => {
-    const origin = e.target.closest('a');
-    if (origin && origin.href && origin.href.includes('/modals/')) {
-      e.preventDefault();
-      const { openModal } = await import(`${window.hlx.codeBasePath}/blocks/modal/modal.js`);
-      openModal(origin.href);
-    }
-  });
+/**
+ * Add <img> for icons, prefixed with codeBasePath and optional prefix. -- taken from aem.js and modified
+ * @param {Element} [element] Element containing icons
+ * @param {string} [prefix] prefix to be added to icon the src
+ */
+function decorateIcons( element, prefix = '' ) {
+	const icons = [...element.querySelectorAll( 'span.icon' )];
+	icons.forEach( ( span ) => {
+		decorateIcon( span, prefix );
+	} );
 }
 
 /**
  * Builds all synthetic blocks in a container element.
  * @param {Element} main The container element
+ * @param {String} templateName The name of the template
  */
-function buildAutoBlocks(main) {
-  try {
-    if (!main.querySelector('.hero')) buildHeroBlock(main);
-    if (document.body.classList.contains('sidenav-left')) buildSideNavLeft(main);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Auto Blocking failed', error);
-  }
+function buildAutoBlocks( main, templateName ) {
+	try {
+		buildHeroBlock( main, templateName );
+	} catch ( error ) {
+		// eslint-disable-next-line no-console
+		console.error( 'Auto Blocking failed', error );
+	}
 }
 
 /**
- * Decorates all sections in a container element.
- * @param {Element} main The container element
+ * Check to see if a ul element contains only links
+ * @param {Element} ulElement element we are checking
  */
-function decorateSections(main) {
-  main.querySelectorAll(':scope > div').forEach((section) => {
-    const wrappers = [];
-    let defaultContent = false;
-    [...section.children].forEach((e) => {
-      if (e.classList.contains('richtext')) {
-        e.removeAttribute('class');
-        if (!defaultContent) {
-          const wrapper = document.createElement('div');
-          wrapper.classList.add('default-content-wrapper', 'usa-prose');
-          wrappers.push(wrapper);
-          defaultContent = true;
-        }
-      } else if (e.tagName === 'DIV' || !defaultContent) {
-        const wrapper = document.createElement('div');
-        wrappers.push(wrapper);
-        defaultContent = e.tagName !== 'DIV';
-        if (defaultContent) wrapper.classList.add('default-content-wrapper', 'usa-prose');
-      }
-      wrappers[wrappers.length - 1].append(e);
-    });
-
-    // Add wrapped content back
-    wrappers.forEach((wrapper) => section.append(wrapper));
-    section.classList.add('section');
-    section.dataset.sectionStatus = 'initialized';
-    section.style.display = 'none';
-
-    // Process section metadata
-    const sectionMeta = section.querySelector('div.section-metadata');
-    if (sectionMeta) {
-      const meta = readBlockConfig(sectionMeta);
-      Object.keys(meta).forEach((key) => {
-        if (key === 'style') {
-          const styles = meta.style
-            .split(',')
-            .filter((style) => style)
-            .map((style) => toClassName(style.trim()));
-          styles.forEach((style) => section.classList.add(style));
-        } else {
-          section.dataset[toCamelCase(key)] = meta[key];
-        }
-      });
-      sectionMeta.parentNode.remove();
-    }
-  });
+function containsOnlyLinks( ulElement ) {
+	const lis = ulElement.querySelectorAll( 'li' );
+	for ( const li of lis ) {
+		if ( li.children.length !== 1 || li.firstElementChild.tagName.toLowerCase() !== 'a' ) {
+			return false;
+		}
+	}
+	return true;
 }
+
+/**
+ * Decorates content containing a list of links as an unstyled link list.
+ * @param {Element} element container element
+ */
+function decorateUnstyledLinks( element ) {
+	element.querySelectorAll( 'ul' ).forEach( ( ul ) => {
+		// only add the class if this is directly in the default content wrapper and NOT a block
+		if ( ul.parentNode.classList.contains( 'default-content-wrapper' ) && containsOnlyLinks( ul ) ) {
+			ul.classList.add( 'usa-list', 'usa-list--unstyled', 'usa-list__unstyled-link-list' );
+		}
+	} );
+}
+
+/**
+ * Decorates paragraphs containing a single link as buttons.
+ * @param {Element} element container element
+ */
+export function decorateButtons( element ) {
+	element.querySelectorAll( 'a' ).forEach( ( a ) => {
+		a.title = a.title || a.textContent;
+		if ( a.href !== a.textContent ) {
+			const up = a.parentElement;
+			const twoup = a.parentElement.parentElement;
+			if ( !a.querySelector( 'img' ) ) {
+				if ( up.childNodes.length === 1 && ( up.tagName === 'P' || up.tagName === 'DIV' ) ) {
+					a.className = 'usa-button'; // default
+					up.classList.add( 'usa-button__wrap' );
+				}
+				if (
+					up.childNodes.length === 1
+					&& up.tagName === 'STRONG'
+					&& twoup.childNodes.length === 1
+					&& twoup.tagName === 'P'
+				) {
+					a.className = 'usa-button usa-button--secondary';
+					twoup.classList.add( 'usa-button__wrap' );
+				}
+				if (
+					up.childNodes.length === 1
+					&& up.tagName === 'EM'
+					&& twoup.childNodes.length === 1
+					&& twoup.tagName === 'P'
+				) {
+					a.className = 'usa-button usa-button--outline';
+					twoup.classList.add( 'usa-button__wrap' );
+				}
+			}
+		}
+	} );
+}
+
+/**
+ * Checks if a URL is a pdf.
+ * @param {string} url The URL to check
+ * @returns {boolean} True if the URL ends with .pdf
+ */
+function isPDFUrl( url ) {
+	return url.toLowerCase().endsWith( '.pdf' );
+}
+
+/**
+ * Decorates paragraphs containing an external link. Separating out for managing.
+ * @param {Element} element container element
+ */
+function decorateExternalLinks( element ) {
+	element.querySelectorAll( 'a' ).forEach( ( a ) => {
+		a.title = a.title || a.textContent;
+		if ( a.textContent && a.href !== a.textContent ) { // only decorate if the link is wrapping text content
+			if ( !a.querySelector( 'img' ) ) {
+				if ( isPDFUrl( a.href ) ) {
+					a.classList.add( 'usa-link--pdf' );
+					a.setAttribute( 'target', '_blank' );
+					getIndividualIcon( a, 'file-pdf' );
+				} else if ( !isSameDomainOrSubdomain( a.href ) ) {
+					a.classList.add( 'usa-link--external' );
+					a.setAttribute( 'target', '_blank' );
+				}
+			}
+		} else if ( a.href !== a.textContent ) {
+			if ( !isSameDomainOrSubdomain( a.href ) ) {
+				a.setAttribute( 'target', '_blank' );
+			}
+		}
+	} );
+}
+
+/**
+ * Decorates h2 elements with a class
+ * @param {Element} element container element
+ */
+function decorateH2s( element ) {
+	element.querySelectorAll( 'h2' ).forEach( ( h2 ) => {
+		const childEleTag = h2.childNodes.length === 1 && h2.firstElementChild?.tagName.toLowerCase();
+		// contains only emphasized text
+		if ( childEleTag && ( childEleTag === 'em' || childEleTag === 'i' ) ) {
+			h2.classList.add( 'h2--underline' );
+		}
+	} );
+}
+
+/**
+ * Converts links to YouTube to embedded videos
+ * Leverages text within the same paragraph as the title for accessibility
+ * @param {Element} element container element
+ */
+function decorateYouTube( element ) {
+	element.querySelectorAll( 'a[href*="youtube.com"], a[href*="youtu.be"], a[href*="youtube-nocookie.com"]' ).forEach( ( link ) => {
+
+		// extract the video ID from the link
+		const youtubeRegex = /(?:https?:\/\/(?:m\.)?(?:www\.)?youtu(?:\.be\/|(?:be-nocookie|be)\.com\/)(?:watch|\w+\?(?:feature=\w+\.\w+&)?v=|v\/|e\/|embed\/|live\/|shorts\/|user\/(?:[\w#]+\/)+))([^&#?\n]+)/i;
+		const id = youtubeRegex.exec( link.href )?.[1];
+		if ( !id ) return;
+
+		let parent = link.closest( 'p' );
+
+		// stop if it's a button
+		if ( parent?.classList.contains( 'usa-button__wrap' ) ) return;
+
+		// stop if it's inside a contact-card-grid (links should remain as links, not embeds)
+		if( link.closest( '.contact-card-grid' ) ) return;
+
+		// stop if there's text ahead of the link
+		if ( link.previousSibling?.textContent.trim().length ) return;
+
+		// text after the link is used as alt text if wrapped in parentheses
+		const textAfter = link.nextSibling?.textContent.trim();
+		let titleText = '';
+		if ( textAfter && textAfter[0] === '(' && textAfter[textAfter.length - 1] === ')' ) {
+			titleText = textAfter.substring( 1, textAfter.length - 1 );
+		}
+
+		// stop if there's text after which is not wrapped in parenthesis (assuming a paragraph)
+		if ( textAfter && !titleText ) return;
+
+		const wrapper = domEl( 'figure', { class: 'video-embed' } );
+		const iframe = domEl( 'iframe', {
+			src: `https://www.youtube.com/embed/${id}?rel=0&color=white`,
+			allowfullscreen: true,
+			loading: 'lazy',
+			frameborder: 0,
+			allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+			title: titleText || 'YouTube video player',
+		} );
+
+		wrapper.appendChild( div( iframe ) );
+
+		if ( !parent ) {
+			// likely inside a column, create a wrapper so that column classes aren't added directly to the iframe
+			parent = div();
+
+			let origParent = link.parentElement;
+			origParent.childNodes.forEach( ( child ) => {
+				parent.append( child );
+			} );
+
+			origParent.textContent = '';
+			origParent.append( parent );
+		}
+
+		parent.replaceWith( wrapper );
+	} );
+}
+
+/**
+ * Converts links to YouTube to embedded videos
+ * Leverages text within the same paragraph as the title for accessibility
+ * @param {Element} element container element
+ */
+function decorateGoogleMaps( element ) {
+	element.querySelectorAll( 'a[href*="google.com/maps"]' ).forEach( ( link ) => {
+		let parent = link.closest( 'p' );
+
+		// stop if it's a button
+		if ( parent?.classList.contains( 'usa-button__wrap' ) ) return;
+		// stop if there's text ahead of the link
+		if ( link.previousSibling?.textContent.trim().length ) return;
+
+		// text after the link is used as alt text if wrapped in parentheses
+		const textAfter = link.nextSibling?.textContent.trim();
+		let titleText = '';
+		if ( textAfter && textAfter[0] === '(' && textAfter[textAfter.length - 1] === ')' ) {
+			titleText = textAfter.substring( 1, textAfter.length - 1 );
+		}
+
+		// stop if there's text after which is not wrapped in parenthesis (assuming a paragraph)
+		if ( textAfter && !titleText ) return;
+
+
+		// Helper function to create the iframe
+		const createIframe = ( embedURL, parent, titleText, link ) => {
+			const wrapper = domEl( 'figure', { class: 'map-embed' } );
+			const iframe = domEl( 'iframe', {
+				src: embedURL,
+				style: 'border:0',
+				allowfullscreen: '',
+				loading: 'lazy',
+				referrerpolicy: 'no-referrer-when-downgrade',
+				title: titleText || 'Google Map',
+			} );
+
+			wrapper.appendChild( iframe );
+
+			if ( !parent ) {
+				// likely inside a column, create a wrapper so that column classes aren't added directly to the iframe
+				parent = domEl( 'div' );
+				let origParent = link.parentElement;
+				origParent.childNodes.forEach( ( child ) => {
+					parent.append( child );
+				} );
+				origParent.textContent = '';
+				origParent.append( parent );
+			}
+			parent.replaceWith( wrapper );
+		};
+
+		const url = new URL( link.href );
+
+		// Check if the link is an embed URL
+		if ( url.href.startsWith( 'https://www.google.com/maps/embed' ) || url.href.startsWith( 'https://www.google.com/maps/d/embed' ) ) {
+			createIframe( url.href, parent, titleText, link );
+		}
+		//If it isn't an embed URL, then it must be a google maps URL
+		else if ( url.href.startsWith( 'https://www.google.com/maps/' ) ) {
+			let embedURL = null;
+			const match = url.searchParams.get( 'q' ) || url.searchParams.get( 'api=1&query' ) || url.searchParams.get( 'cid' );
+
+			if ( match ) {
+				embedURL = `https://maps.google.com/maps?q=${match}&output=embed`;
+			} else {
+				const pathParts = url.pathname.split( '@' )[1]?.split( ',' );
+				if ( pathParts?.length >= 2 ) {
+					const latitude = parseFloat( pathParts[0] );
+					const longitude = parseFloat( pathParts[1] );
+					embedURL = `https://maps.google.com/maps?q=${latitude},${longitude}&output=embed`;
+				}
+			}
+			if ( embedURL ) {
+				createIframe( embedURL, parent, titleText, link );
+			}
+		}
+	} );
+}
+
+/** Converts list with icons into an icon list component
+ * Has "Big" variant
+ * @param {Element} element The container element
+ */
+function decorateIconList( element ) {
+	element.querySelectorAll( 'ul' ).forEach( ( ul ) => {
+		if ( !ul.closest( 'body' ) ) { return; } // skip if ul is not in the DOM (i.e. a fragment)
+
+		// already decorated
+		if ( ul.classList.contains( 'usa-icon-list' ) ) return;
+		// only decorate if all li elements have an icon
+		const lis = ul.querySelectorAll( ':scope > li' );
+		if ( ul.querySelectorAll( ':scope > li .icon:first-child' ).length !== lis.length ) return;
+
+		ul.classList.add( 'usa-icon-list' );
+		if ( ul.querySelector( 'h2, h3, h4' ) ) {
+			ul.classList.add( 'usa-icon-list--size-lg' );
+		}
+
+		lis.forEach( ( li ) => {
+			li.classList.add( 'usa-icon-list__item' );
+
+			// leaving as a span because decorateIcon is still potentially working with it asynchronously
+			const iconEle = li.querySelector( '.icon' );
+			iconEle.classList.add( 'usa-icon-list__icon' );
+
+			const contentWrapper = div( { class: 'usa-icon-list__content' } );
+			while ( li.firstChild ) {
+				const child = li.firstChild;
+
+				// move everything after the br to a new paragraph
+				if ( child.tagName && [ 'H2', 'H3', 'H4' ].includes( child.tagName.toUpperCase() ) ) {
+					const after = document.createElement( 'p' );
+					let foundBR = false;
+					child.childNodes.forEach( c => {
+						if ( foundBR ) {
+							after.appendChild( c );
+						} else if ( c.tagName?.toUpperCase() === 'BR' ) {
+							foundBR = true;
+						}
+					} );
+
+					contentWrapper.appendChild( child ); // the title
+					contentWrapper.appendChild( after );
+				} else {
+					contentWrapper.appendChild( child );
+				}
+			}
+			li.appendChild( contentWrapper );
+
+			li.prepend( iconEle ); // pull the icon back out to the front
+		} );
+	} );
+}
+
+function decorateImgs( element ) {
+	element.querySelectorAll( 'p img:only-child, p picture:only-child, p figure:only-child p' ).forEach( ( img ) => {
+		// if there is nothing else in the paragraph, unwrap the image
+		if ( !img.closest( 'body' ) ) { return; } // skip if ul is not in the DOM (i.e. a fragment)
+
+		const pEle = img.closest( 'p' );
+		let isOnlyNode = true;
+		pEle.childNodes.forEach( ( childNode ) => {
+			if ( childNode !== img && childNode.textContent.trim().length > 0 ) {
+				isOnlyNode = false;
+			}
+		} );
+
+		if ( isOnlyNode ) {
+			pEle.replaceWith( img );
+		}
+	} );
+}
+
+
 
 /**
  * Decorates the main element.
  * @param {Element} main The main element
  */
-// eslint-disable-next-line import/prefer-default-export
-export function decorateMain(main) {
-  // hopefully forward compatible button decoration
-  decorateButtons(main);
-  decorateIcons(main);
-  buildAutoBlocks(main);
-  decorateSections(main);
-  decorateBlocks(main);
+export function decorateMain( main ) {
+	main.id = 'main-content';
+	decorateInner( main );
+
+}
+
+function decorateSections( main ) {
+	const fullWidth = isFullWidthTemplate( getMetadata );
+
+	main.querySelectorAll( ':scope > div' ).forEach( ( section ) => {
+		const wrappers = [];
+		let defaultContent = false;
+		[...section.children].forEach( ( e ) => {
+			if ( e.tagName === 'DIV' || !defaultContent ) {
+				const wrapper = document.createElement( 'div' );
+				wrappers.push( wrapper );
+				defaultContent = e.tagName !== 'DIV';
+				if ( defaultContent ) wrapper.classList.add( 'default-content-wrapper' );
+			}
+			wrappers[wrappers.length - 1].append( e );
+		} );
+		wrappers.forEach( ( wrapper ) => section.append( wrapper ) );
+		section.classList.add( 'section' );
+		section.dataset.sectionStatus = 'initialized';
+		section.style.display = 'none';
+
+		// Process section metadata
+		const sectionMeta = section.querySelector( 'div.section-metadata' );
+		const hasIconButtonGrid = section.querySelector( '.icon-button-grid' ) !== null;
+		const hasFilledCards = section.querySelector( '.info-card-grid.filled, .info-card-grid .icon, .linked-card-grid.filled' ) !== null;
+		const backgroundOptions = { 'light': false, 'dark': false, 'theme': false };
+
+		// Support both old and new section metadata format
+		// https://github.com/adobe/helix-html-pipeline/releases/tag/v6.28.0
+		let sectionMetaObj = sectionMeta ? readBlockConfig( sectionMeta ) : section.dataset;
+
+		if ( sectionMetaObj ) {
+			Object.keys( sectionMetaObj ).forEach( ( key ) => {
+				if ( key === 'style' ) {
+					const styles = sectionMetaObj.style
+						.split( ',' )
+						.filter( ( style ) => style )
+						.map( ( style ) => toClassName( style.trim() ) );
+					styles.forEach( ( style ) => section.classList.add( style ) );
+				} else if ( key === 'layout' ) {
+					const cols = sectionMetaObj[key].split( '/' ).map( ( n ) => Number( n.trim() ) );
+					const sum = cols.reduce( ( a, b ) => a + b, 0 );
+					const isValidLayout = cols.length >= 2
+						&& cols.every( ( n ) => Number.isInteger( n ) && n > 0 )
+						&& sum === 12;
+
+					if ( isValidLayout ) {
+						section.dataset.layout = cols.join( '/' );
+						section.classList.add( 'grid-row', 'grid-gap' );
+
+						const divs = Array.from( section.children ).filter(
+							el => !el.querySelector( '.section-metadata' )
+						);
+
+						divs.forEach( ( div, i ) => {
+							const colSize = cols[i % cols.length];
+							div.classList.add( `desktop:grid-col-${colSize}` );
+						} );
+					}
+				}
+				else if ( key === 'background' ) {
+					const value = String( sectionMetaObj[key] ?? '' ).trim().toLowerCase();
+
+					if( Object.keys( backgroundOptions ).includes( value ) ) {
+						section.classList.add( 'section-background', 'section-background--' + value );
+						backgroundOptions[value] = true;
+						
+						if( fullWidth ) {
+							// Apply full-width background treatment
+							section.classList.add( 'section-background--full' );
+						}
+					} else {
+						// Invalid option was selected, behave as default section
+						section.classList.remove( 'section-background' );
+					}
+				} else if( key === 'background-image' || key === 'backgroundImage' ) {
+					const value = String( sectionMetaObj[key] ?? '' ).trim();
+
+					if( fullWidth && value && value.length ) {
+						let url;
+						try {
+							url = new URL( value );
+						} catch( e ) { console.warn( 'Invalid URL in background-image', value, section ); }
+
+						if( url ) {
+							// Bump up from the default DA size
+							if( url.searchParams.get( 'width' ) === 750 ) {
+								url.searchParams.set( 'width', 1920 );
+							}
+
+							section.prepend( div( {
+								class: 'section-background__image'
+							}, div( {
+								class: 'section-background__image-inner',
+								style: `background-image:url("${url}")`,
+							} ) ) );
+							section.classList.add( 'section-background', 'section-background--image' );
+						}
+					}
+				} else {
+					section.dataset[toCamelCase( key )] = sectionMetaObj[key];
+				}
+			} );
+
+			// Default to dark if this component is within and background isn't specified
+			if( hasIconButtonGrid && Object.keys( backgroundOptions ).filter( key => backgroundOptions[key] ).length ) {
+				section.classList.add( 'section-background', 'section-background--dark' );
+				if( fullWidth ) {
+					section.classList.add( 'section-background--full' );
+				}
+			} else if( hasFilledCards && ( backgroundOptions.dark || backgroundOptions.theme ) ) {
+				// If the section has filled cards, force a light version
+				section.classList.remove( 'section-background--dark' );
+				backgroundOptions.dark = false;
+				section.classList.add( 'section-background--light' );
+				backgroundOptions.light = true;
+			}
+			
+			if( sectionMeta ) {
+				sectionMeta.parentElement.remove(); // itself + wrapping div
+			}
+		} else if( hasIconButtonGrid ) {
+			// Default to dark if this component is within and background isn't specified
+			section.classList.add( 'section-background', 'section-background--dark' );
+			if( fullWidth ) {
+				section.classList.add( 'section-background--full' );
+			}
+		}
+	} );
+}
+
+export function decorateInner( container ) {
+	decorateH2s( container );
+	decorateImgs( container );
+	decorateButtons( container );
+	decorateYouTube( container );
+	decorateGoogleMaps( container );
+	decorateIcons( container );
+	decorateIconList( container );
+	decorateSections( container );
+	decorateBlocks( container );
+	decorateUnstyledLinks( container );
+	decorateExternalLinks( container );
+}	
+
+/**
+ *
+ * @param {Element} doc The container element
+ * @param {string} templateName The template name from document metadata
+ */
+async function loadTemplate( doc, templateName ) {
+	try {
+		const cssLoaded = new Promise( ( resolve ) => {
+			loadCSS( `${window.hlx.codeBasePath}/templates/${templateName}/${templateName}.css`, resolve() );
+		} );
+		const decorationComplete = new Promise( ( resolve ) => {
+			( async () => {
+				try {
+					const mod = await import( `../templates/${templateName}/${templateName}.js` );
+					if ( mod.default ) {
+						await mod.default( doc );
+					}
+				} catch ( error ) {
+					// eslint-disable-next-line no-console
+					console.log( `failed to load module for ${templateName}`, error );
+				}
+				resolve();
+			} )();
+		} );
+		await Promise.all( [cssLoaded, decorationComplete] );
+	} catch ( error ) {
+		// eslint-disable-next-line no-console
+		console.log( `failed to load template ${templateName}`, error );
+	}
 }
 
 /**
  * Loads everything needed to get to LCP.
  * @param {Element} doc The container element
  */
-async function loadEager(doc) {
-  doc.documentElement.lang = 'en';
-  decorateTemplateAndTheme();
+async function loadEager( doc ) {
+	// Brand slug application
+	const brandSlug = getMetadata( 'brandslug' );
+	if ( brandSlug ) {
+		document.title = document.title + ' | ' + brandSlug;
+	}
+	document.documentElement.lang = 'en';
+	decorateTemplateAndTheme();
+	getMetadata( 'theme' ).split( ',' ).map( toClassName ).filter( Boolean ).forEach( ( theme ) => {
+		document.body.classList.add( `theme--${theme}` );
+	} );
+	loadHeader( doc.querySelector( 'header' ) );
+	// load the blocks BEFORE decorating the template
+	const main = doc.querySelector( 'main' );
+	if ( main ) {
+		decorateMain( main );
+		await loadSection( main.querySelector( '.section' ), waitForFirstImage );
+	}
 
-  // Load template CSS early (before body is revealed) to avoid layout shift
-  const templateName = toClassName(getMetadata('template'));
-  if (templateName) loadCSS(`${window.hlx.codeBasePath}/styles/templates/${templateName}.css`);
+	// pull in template name from document metadata
+	// fallback to USWDS "documentation" template if none is specified
+	const templateName = getMetadata( 'template' );
+	if ( templateName ) {
+		await loadTemplate( doc, templateName );
+	} else {
+		await loadTemplate( doc, 'default' );
+	}
 
-  // Set header variant for CSS height calculation (prevents CLS)
-  const headerVariant = getMetadata('header') || getMetadata('header-variant') || 'basic';
-  doc.body.dataset.headerVariant = headerVariant;
-
-  if (getMetadata('breadcrumbs').toLowerCase() === 'true') {
-    doc.body.dataset.breadcrumbs = true;
-  }
-  const main = doc.querySelector('main');
-  if (main) {
-    decorateMain(main);
-    doc.body.classList.add('appear');
-    await loadSection(main.querySelector('.section'), waitForFirstImage);
-  }
-
-  sampleRUM.enhance();
-
-  try {
-    /* if desktop (proxy for fast connection) or fonts already loaded, load fonts.css */
-    if (window.innerWidth >= 900 || sessionStorage.getItem('fonts-loaded')) {
-      loadFonts();
-    }
-  } catch (e) {
-    // do nothing
-  }
+	// // build components that should be in main but be outside of the main template area
+	buildAutoBlocks( main, templateName );
 }
 
 /**
  * Loads everything that doesn't need to be delayed.
  * @param {Element} doc The container element
  */
-async function loadLazy(doc) {
-  autolinkModals(doc);
+async function loadLazy( doc ) {
+	const main = doc.querySelector( 'main' );
+	await loadSections( main );
+	const { hash } = window.location;
+	const element = hash ? doc.getElementById( hash.substring( 1 ) ) : false;
+	if ( hash && element ) element.scrollIntoView();
 
-  const main = doc.querySelector('main');
-  await loadSections(main);
+	loadFooter( doc.querySelector( 'footer' ) );
+	loadCSS( `${window.hlx.codeBasePath}/styles/lazy-styles.css` );
+	loadFonts();
 
-  const { hash } = window.location;
-  const element = hash ? doc.getElementById(hash.substring(1)) : false;
-  if (hash && element) element.scrollIntoView();
+	const loadQuickEdit = async ( ...args ) => {
+		const { default: initQuickEdit } = await import( '../tools/quick-edit/quick-edit.js' );
+		initQuickEdit( ...args );
+	};
 
-  loadHeader(doc.querySelector('header'));
-  loadFooter(doc.querySelector('footer'));
+	let a11yModeActive = false;
+	const loadA11yMode = async () => {
+		const { default: initA11y } = await import( '../tools/plugins/accessibility-mode/accessibility-mode.js' );
+		a11yModeActive = !a11yModeActive;
+		initA11y( a11yModeActive );
+	};
 
-  loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
-  loadFonts();
+	const addSidekickListeners = ( sk ) => {
+		sk.addEventListener( 'custom:quick-edit', loadQuickEdit );
+		sk.addEventListener( 'custom:accessibility-mode', loadA11yMode );
+	};
 
-  const loadQuickEdit = async (...args) => {
-    // eslint-disable-next-line import/no-cycle
-    const { default: initQuickEdit } = await import('../tools/quick-edit/quick-edit.js');
-    initQuickEdit(...args);
-  };
-
-  const addSidekickListeners = (sk) => {
-    sk.addEventListener('custom:quick-edit', loadQuickEdit);
-  };
-
-  const sk = document.querySelector('aem-sidekick');
-  if (sk) {
-    addSidekickListeners(sk);
-  } else {
-    document.addEventListener('sidekick-ready', () => {
-      addSidekickListeners(document.querySelector('aem-sidekick'));
-    }, { once: true });
-  }
+	const sk = document.querySelector( 'aem-sidekick' );
+	if ( sk ) {
+		addSidekickListeners( sk );
+	} else {
+		document.addEventListener( 'sidekick-ready', () => {
+			addSidekickListeners( document.querySelector( 'aem-sidekick' ) );
+		}, { once: true } );
+	}
 }
 
 /**
@@ -438,48 +727,44 @@ async function loadLazy(doc) {
  * without impacting the user experience.
  */
 function loadDelayed() {
-  window.setTimeout(() => import('./delayed.js'), 3000);
-  // load anything that can be postponed to the latest here
+	window.setTimeout( () => import( './delayed.js' ), 3000 );
+	// load anything that can be postponed to the latest here
 }
 
-async function loadSidekick() {
-  if (document.querySelector('aem-sidekick')) {
-    import('./sidekick.js');
-    return;
-  }
-
-  document.addEventListener('sidekick-ready', () => {
-    import('./sidekick.js');
-  });
+async function loadFonts() {
+	await loadCSS( 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap' );
+	try {
+		if ( !window.location.hostname.includes( 'localhost' ) ) sessionStorage.setItem( 'fonts-loaded', 'true' );
+	} catch ( e ) {
+		// do nothing
+	}
 }
 
 export async function loadPage() {
-  await loadEager(document);
-  await loadLazy(document);
-  loadDelayed();
-  loadSidekick();
+	await loadEager( document );
+	await loadLazy( document );
+	loadDelayed();
 }
 
-// UE Editor support before page load
-if (window.location.hostname.includes('ue.da.live')) {
-  await import(`${window.hlx.codeBasePath}/ue/scripts/ue.js`).then(({ default: ue }) => ue());
-}
+if ( !window.hlx.suppressLoadPage ) await loadPage();
 
-loadPage();
+// add class to to make the content appear in case header gets stuck
+( function bodyAppear() {
 
-(() => {
-  const hasQE = new URL(window.location.href).searchParams.has('quick-edit');
-  if (hasQE) import('../tools/quick-edit/quick-edit.js').then((mod) => mod.default());
-})();
+	function addClass() {
+		document.body.classList.add( 'appear' );
+	}
+	setTimeout( addClass, 2000 );
+} )();
 
-(function da() {
-  const { searchParams } = new URL(window.location.href);
+// enable document authoring snippet
+( async function loadDa() {
+	if ( !new URL( window.location.href ).searchParams.get( 'dapreview' ) ) return;
+	import( 'https://da.live/scripts/dapreview.js' ).then( ( { default: daPreview } ) => daPreview( loadPage ) );
+} )();
 
-  const lp = searchParams.get('dapreview');
-  // eslint-disable-next-line import/no-unresolved
-  if (lp) import('https://da.live/scripts/dapreview.js').then((mod) => mod.default(loadPage));
-
-  const exp = searchParams.get('daexperiment');
-  // eslint-disable-next-line import/no-unresolved
-  if (exp) import('https://da.live/nx/public/plugins/exp/exp.js');
-}());
+// enable quick edit
+( () => {
+	const hasQE = new URL( window.location.href ).searchParams.has( 'quick-edit' );
+	if ( hasQE ) import( '../tools/quick-edit/quick-edit.js' ).then( ( mod ) => mod.default() );
+} )();

@@ -1,0 +1,69 @@
+@use '../../styles/ne-global-imports' as *;
+@use './card-grid-base';
+@use 'sass:math';
+
+.info-card-grid-wrapper {
+	$block: 'usa-card';
+
+	@include card-grid-base.card-grid-wrapper;
+
+	.#{$block} {
+		.usa-button {
+			$button-context: 'Button';
+
+			@include set-text-and-bg('secondary', $context: $button-context);
+			width: 100%;
+
+			&:hover,
+			&.usa-button--hover {
+				@include set-text-and-bg('secondary-light', $context: $button-context);
+			}
+		}
+	}
+
+	// Icon-specific styling for filled variant - when block has .filled class
+	&:has(svg) {
+		.#{$block}__img {
+			@include u-padding-top($theme-card-padding-perimeter);
+			@include u-padding-x($theme-card-padding-perimeter);
+			padding-bottom: math.div(units($theme-card-padding-y), 2);
+			aspect-ratio: unset;
+			background-color: transparent;
+		}
+
+		.usa-icon {
+			width: units(8);
+			height: units(8);
+		}
+	}
+
+	.section-background--theme & {
+		.#{$block} {
+			.usa-button {
+				&,
+				&:hover,
+				&.usa-button--hover {
+					background: var(--theme-card-accent);
+					color: var(--theme-card-button-text);
+				}
+
+				&:hover {
+					text-decoration: underline;
+				}
+			}
+		}
+
+		&:has(.filled) {
+			.#{$block} {
+				.usa-button {
+					&,
+					&:hover,
+					&.usa-button--hover {
+						background: var(--theme-card-filled-accent);
+						color: color('ink');
+					}
+				}
+			}
+		}
+	}
+}

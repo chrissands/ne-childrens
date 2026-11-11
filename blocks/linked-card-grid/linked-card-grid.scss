@@ -1,0 +1,115 @@
+@use '../../styles/ne-global-imports' as *;
+@use '../info-card-grid/card-grid-base';
+
+.linked-card-grid-wrapper {
+	$block: 'usa-card';
+	$icon-size: px-to-rem(48px);
+
+	@mixin hover-shadow($color: color('secondary')) {
+		box-shadow: 0 0 0 3px $color, 0 8px 16px 0 rgb(0 0 0 / 10%);
+	}
+
+	@include card-grid-base.card-grid-wrapper;
+
+	.#{$block} {
+		&__link {
+			text-decoration: none;
+
+			&:hover {
+				text-decoration: underline;
+				text-decoration-thickness: 2px;
+			}
+
+			&:after { // cover the whole card so it's clickable
+				@include u-radius('md');
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				border-top-left-radius: 0;
+				border-top-right-radius: 0;
+				text-decoration: none;
+				content: '';
+				z-index: 1;
+				inset: 0;
+			}
+
+			svg {
+				display: none; // backup because sometimes the external link svg renders when it should not
+			}
+		}
+
+		&__container {
+			position: relative;
+			transition: box-shadow $transition-slow;
+
+			&:has(.#{$block}__link:hover) {
+				@include hover-shadow;
+
+				.usa-button__wrap {
+					transform: translateX(units(0.5));
+					transition: transform $transition;
+				}
+			}
+		}
+
+		&__body {
+			display: flex;
+			flex-direction: column;
+			gap: 2rem;
+		}
+
+		.usa-button__wrap {
+			height: $icon-size;
+			margin-top: auto; // hug the bottom of __body
+
+			svg {
+				width: $icon-size;
+				height: $icon-size;
+				fill: color('primary');
+			}
+		}
+	}
+
+	&:has(.filled) {
+		.#{$block} {
+			.usa-button__wrap {
+				svg {
+					fill: color('white');
+				}
+			}
+		}
+	}
+
+	// Theme-aware hover and icon colors
+	.section-background--theme & {
+		.#{$block} {
+			&__container {
+				&:has(.#{$block}__link:hover) {
+					@include hover-shadow(var(--theme-card-accent));
+				}
+			}
+
+			.usa-button__wrap {
+				svg {
+					fill: var(--theme-card-heading);
+				}
+			}
+		}
+
+		&:has(.filled) {
+			.#{$block} {
+				&__container{
+					&:has(.#{$block}__link:hover) {
+						@include hover-shadow(color('white'));
+					}
+				}
+
+				.usa-button__wrap {
+					svg {
+						fill: var(--theme-card-filled-text);
+					}
+				}
+			}
+		}
+	}
+}

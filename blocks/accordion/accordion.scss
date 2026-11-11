@@ -1,0 +1,162 @@
+@use '../../styles/ne-global-imports' as *;
+@use 'sass:meta';
+
+$block: 'usa-accordion';
+
+.accordion-wrapper {
+	$accordion-padding-left: units(2.5); // found in ~uswds/usa-accordion/src/styles/usa-accordion. No variable was set
+	$accordion-circle: px-to-rem(28px);
+	$accordion-button-gap: units(1);
+
+	margin-bottom: units($component-spacing-sm);
+
+	.#{$block}__heading {
+		&:not(:first-child) {
+			margin-top: 0;
+		}
+	}
+
+	.#{$block}__content {
+		padding-left: calc($accordion-padding-left + $accordion-circle + $accordion-button-gap);
+		font-size: size('body', 5);
+	}
+
+	.#{$block}__button {
+		@include u-border-top('1px', 'base-lighter');
+		display: flex;
+		align-items: center;
+		column-gap: units(1);
+		background-color: transparent; // to set transparency, I have to set it outside of the tokens, or an error occurs
+		background-image: none;
+		color: color(primary);
+		font-size: size('body', 5);
+
+		&:before {
+			@include add-background-svg('usa-icons/remove');
+			display: inline-block;
+			flex-shrink: 0;
+			width: $accordion-circle;
+			height: $accordion-circle;
+			border-radius: 50%;
+			background-color: color(secondary);
+			background-position: center center;
+			content: '';
+		}
+
+		&[aria-expanded='false'] {
+			background-image: none;
+
+			&:hover,
+			&:focus,
+			&:focus-visible {
+				background-image: none;
+			}
+
+			&:before {
+				@include add-background-svg('usa-icons/add');
+			}
+		}
+
+		&:hover,
+		&:focus,
+		&:focus-visible {
+			background-color: transparent;
+			background-image: none;
+			color: color('primary');
+			text-decoration: underline;
+		}
+	}
+}
+
+.tabs {
+	.#{$block} {
+
+		&__button {
+			@include u-padding(2);
+			@include u-radius(0);
+			@include u-height('full');
+
+			background: color('primary');
+			color: color('white');
+
+			&[aria-expanded='true'] {
+				background-color: color('white');
+				color: color('primary');
+				box-shadow: 0 -4px 16px -6px rgb(133 133 133 / 45%);
+
+			}
+
+			&[aria-expanded='false'] {
+				background-color: color('primary');
+				color: color('white');
+			}
+
+			&:hover {
+				background-color: color('white');
+				color: color('primary');
+			}
+		}
+
+		&__content {
+			background-color: color('white');
+			box-shadow: inset 0 10px 2px -7px #80808045;
+		}
+	}
+}
+
+.tabs-grid {
+
+	.#{$block} {
+		@include at-media('tablet') {
+			@include u-radius(0);
+			display: grid;
+			grid-auto-rows: auto;
+			gap: 0 5px;
+			flex-direction: column;
+
+			&__heading {
+				grid-row: 1;
+
+				.#{$block}__button {
+					@include u-border(0);
+					justify-content: center;
+					border-radius: 6px 6px 0 0;
+					text-align: center;
+
+					&[aria-expanded='true'] {
+						background-color: color('white');
+						color: color('black');
+					}
+
+					&[aria-expanded='false'] {
+
+						&:hover,
+						&:focus,
+						&:focus-visible {
+							background-color: color('primary-darker');
+							color: color('white');
+						}
+					}
+
+					&:before {
+						display: none;
+					}
+				}
+			}
+
+			&__content {
+				@include u-width('full');
+				grid-row: 2;
+				grid-column-start: 1;
+				border-radius: 0 0 6px 6px;
+				background-color: color('white');
+				box-shadow: 0 8px 8px -6px rgb(133 133 133 / 45%);
+
+				p {
+					@include u-maxw('full');
+				}
+
+			}
+		}
+	}
+}

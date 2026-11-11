@@ -1,0 +1,36 @@
+@use '../../styles/ne-global-imports' as *;
+@use '../../styles/ne-pagination';
+@use '../../styles/ne-spinner';
+
+$block: 'graphql-results';
+
+.section {
+	&.#{$block}-container {
+		.divider {
+			margin-bottom: 56px;
+		}
+
+		.usa-alert__heading {
+			margin-bottom: 0;
+		}
+	}
+}
+
+.#{$block} {
+	&.ndbf-search-securities {
+		.usa-pagination {
+			justify-content: left;
+			
+			&__page-no, &__overflow {
+				display: none;
+			}
+		}
+	}
+}
+
+.graphql-results {
+	.ne-spinner {
+		margin: units(5) auto;
+	}
+}
+

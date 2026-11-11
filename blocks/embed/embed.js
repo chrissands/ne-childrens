@@ -1,113 +1,98 @@
-/*
- * Embed Block
- * Show videos and social posts directly on your page
- * https://www.hlx.live/developer/block-collection/embed
- */
+export default function decorate( block ) 
+{
+	const anchor = block.querySelector( 'a' ) ;
+	const link =  anchor.href;
+	anchor.remove();
+	const p = block.querySelector( 'div:has(>p)' );
+	const div = document.createElement( 'div' );
 
-const loadScript = (url, callback, type) => {
-  const head = document.querySelector('head');
-  const script = document.createElement('script');
-  script.src = url;
-  if (type) {
-    script.setAttribute('type', type);
-  }
-  script.onload = callback;
-  head.append(script);
-  return script;
-};
+	if ( p && p.innerHTML !== '' && p.innerHTML !== null ) {
+		div.innerHTML += p.innerHTML;
+		p.remove();
+	}
 
-const getDefaultEmbed = (url) => `<div style="left: 0; width: 100%; height: 0; position: relative; padding-bottom: 56.25%;">
-    <iframe src="${url.href}" style="border: 0; top: 0; left: 0; width: 100%; height: 100%; position: absolute;" allowfullscreen=""
-      scrolling="no" allow="encrypted-media" title="Content from ${url.hostname}" loading="lazy">
-    </iframe>
-  </div>`;
+	block.innerHTML = '';
 
-const embedYoutube = (url, autoplay) => {
-  const usp = new URLSearchParams(url.search);
-  const suffix = autoplay ? '&muted=1&autoplay=1' : '';
-  let vid = usp.get('v') ? encodeURIComponent(usp.get('v')) : '';
-  const embed = url.pathname;
-  if (url.origin.includes('youtu.be')) {
-    [, vid] = url.pathname.split('/');
-  }
-  const embedHTML = `<div style="left: 0; width: 100%; height: 0; position: relative; padding-bottom: 56.25%;">
-      <iframe src="https://www.youtube.com${vid ? `/embed/${vid}?rel=0&v=${vid}${suffix}` : embed}" style="border: 0; top: 0; left: 0; width: 100%; height: 100%; position: absolute;" 
-      allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope; picture-in-picture" allowfullscreen="" scrolling="no" title="Content from Youtube" loading="lazy"></iframe>
-    </div>`;
-  return embedHTML;
-};
+	const getClassValue = ( prefix ) => {
+		const c = [...block.classList].find( ( el ) => el.startsWith( prefix + '-' ) );
+		return c ? c.split( '-' )[1] : null;
+	};
 
-const embedVimeo = (url, autoplay) => {
-  const [, video] = url.pathname.split('/');
-  const suffix = autoplay ? '?muted=1&autoplay=1' : '';
-  const embedHTML = `<div style="left: 0; width: 100%; height: 0; position: relative; padding-bottom: 56.25%;">
-      <iframe src="https://player.vimeo.com/video/${video}${suffix}" 
-      style="border: 0; top: 0; left: 0; width: 100%; height: 100%; position: absolute;" 
-      frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen  
-      title="Content from Vimeo" loading="lazy"></iframe>
-    </div>`;
-  return embedHTML;
-};
+	const fixedWidthClass = getClassValue( 'width' );
+	const fixedHeightClass = getClassValue( 'height' );
+	const mobileFixedWidthClass = getClassValue( 'mobilewidth' );
+	const mobileFixedHeightClass = getClassValue( 'mobileheight' );
+	const tabletFixedWidthClass = getClassValue( 'tabletwidth' );
+	const tabletFixedHeightClass = getClassValue( 'tabletheight' );
 
-const embedTwitter = (url) => {
-  const embedHTML = `<blockquote class="twitter-tweet"><a href="${url.href}"></a></blockquote>`;
-  loadScript('https://platform.twitter.com/widgets.js');
-  return embedHTML;
-};
+	const urlWidthMatch = link.match( /[?&]width=(\d+)/i );
+	const urlHeightMatch = link.match( /[?&]height=(\d+)/i );
+	const urlW = urlWidthMatch ? Number( urlWidthMatch[1] ) : null;
+	const urlH = urlHeightMatch ? Number( urlHeightMatch[1] ) : null;
 
-const loadEmbed = (block, link, autoplay) => {
-  if (block.classList.contains('embed-is-loaded')) {
-    return;
-  }
+	const container = document.createElement( 'div' );
+	container.classList.add( 'iframe-container' );
 
-  const EMBEDS_CONFIG = [
-    {
-      match: ['youtube', 'youtu.be'],
-      embed: embedYoutube,
-    },
-    {
-      match: ['vimeo'],
-      embed: embedVimeo,
-    },
-    {
-      match: ['twitter'],
-      embed: embedTwitter,
-    },
-  ];
+	if ( urlH ) {
+		container.style.setProperty( '--container-height', `${urlH}px` );
+		container.style.setProperty( '--tablet-container-height', `${urlH}px` );
+		container.style.setProperty( '--desktop-container-height', `${urlH}px` );
+	}
+	if ( mobileFixedHeightClass ) {
+		container.style.setProperty(
+			'--container-height',
+			`${mobileFixedHeightClass}px`
+		);
+	}
+	if ( tabletFixedHeightClass ) {
+		container.style.setProperty(
+			'--tablet-container-height',
+			`${tabletFixedHeightClass}px`
+		);
+	}
+	if ( fixedHeightClass ) {
+		container.style.setProperty(
+			'--desktop-container-height',
+			`${fixedHeightClass}px`
+		);
+	}
 
-  const config = EMBEDS_CONFIG.find((e) => e.match.some((match) => link.includes(match)));
-  const url = new URL(link);
-  if (config) {
-    block.innerHTML = config.embed(url, autoplay);
-    block.classList = `block embed embed-${config.match[0]}`;
-  } else {
-    block.innerHTML = getDefaultEmbed(url);
-    block.classList = 'block embed';
-  }
-  block.classList.add('embed-is-loaded');
-};
+	if ( urlW ) {
+		container.style.setProperty( '--container-width', `${urlW}px` );
+		container.style.setProperty( '--desktop-container-width', `${urlW}px` );
+		container.style.setProperty( '--tablet-container-width', `${urlW}px` );
+	}
+	if ( fixedWidthClass ) {
+		container.style.setProperty(
+			'--desktop-container-width',
+			`${fixedWidthClass}px`
+		);
+	}
+	if ( mobileFixedWidthClass ) {
+		container.style.setProperty(
+			'--container-width',
+			`${mobileFixedWidthClass}px`
+		);
+	}
 
-export default function decorate(block) {
-  const placeholder = block.querySelector('picture');
-  const link = block.querySelector('a').href;
-  block.textContent = '';
+	if ( tabletFixedWidthClass ) {
+		container.style.setProperty(
+			'--tablet-container-width',
+			`${tabletFixedWidthClass}px`
+		);
+	}
+	
+	container.innerHTML = `
+		<iframe
+			src='${link}'
+			style='border:0; width:100%; height:100%;'
+			loading='lazy'
+			allow='encrypted-media'
+			allowfullscreen
+			title='Embedded content'>
+		</iframe>
+	`;
 
-  if (placeholder) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'embed-placeholder';
-    wrapper.innerHTML = '<div class="embed-placeholder-play"><button type="button" title="Play"></button></div>';
-    wrapper.prepend(placeholder);
-    wrapper.addEventListener('click', () => {
-      loadEmbed(block, link, true);
-    });
-    block.append(wrapper);
-  } else {
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        observer.disconnect();
-        loadEmbed(block, link);
-      }
-    });
-    observer.observe(block);
-  }
+	block.append( container );
+	if ( div.textContent != '' ) block.append( div );
 }

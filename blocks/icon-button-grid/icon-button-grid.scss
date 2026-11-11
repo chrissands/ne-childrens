@@ -1,0 +1,168 @@
+@use '../../styles/ne-global-imports' as *;
+@use 'sass:math';
+
+.icon-button-grid-wrapper {
+	margin-bottom: units($component-spacing-lg);
+
+	ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	li {
+		margin: 0;
+	}
+
+	.section-background--full &:last-child {
+		margin-bottom: 0;
+	}
+}
+
+.icon-button-card {
+	$block: 'icon-button-card';
+	$hover-transition: $transition-slow;
+
+	&-group {
+		row-gap: units(4); // match .grid-gap-4 column spacing
+	}
+
+	&__heading {
+		transition: color $hover-transition;
+		color: color('white');
+		font-family: family($theme-font-role-heading);
+		font-size: size('body', 'md');
+		font-weight: font-weight('bold');
+	}
+
+	&__body {
+		$svg-size: px-to-rem(120px);
+		height: $svg-size;
+
+		p {
+			span {
+				display: flex;
+				justify-content: center;
+			}
+		}
+
+		svg {
+			width: $svg-size;
+			height: $svg-size;
+			fill: color('white');
+			transition: fill $hover-transition;
+		}
+	}
+
+	&__container {
+		@include u-padding(3);
+		@include u-radius('md');
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		transition: background-color $hover-transition;
+		background-color: color('primary-vivid');
+		box-shadow: 0 0 24px 0 rgba(color('ink'), 0.35);
+		gap: units(2);
+
+		&:has(a:focus-visible),
+		&:has(a:hover) {
+			background-color: color('primary-lightest');
+
+			.#{$block}__heading {
+				color: color('ink');
+				text-decoration: underline;
+				text-decoration-thickness: 2px
+			}
+
+			.#{$block}__body {
+				$svg-size: px-to-rem(120px);
+				height: $svg-size;
+
+				svg {
+					fill: color('ink')
+				}
+			}
+		}
+
+		&:has(a) {
+			cursor: pointer;
+		}
+
+		a {
+			@include u-radius('md');
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			text-decoration: none;
+			z-index: 1;
+			inset: 0; // shorthand for top: 0; right: 0; bottom: 0; left: 0;
+		}
+	}
+
+	.section-background--light & {
+		&__container {
+			background-color: color('white');
+			box-shadow: 0 0 24px 0 rgba(color('primary-dark'), 0.20);
+
+			&:has(a:focus-visible),
+			&:has(a:hover) {
+				background-color: color('primary');
+
+				.#{$block}__heading {
+					color: color('white');
+				}
+
+				.#{$block}__body {
+					svg {
+						fill: color('white');
+					}
+				}
+			}
+		}
+
+		&__heading {
+			color: color('primary');
+		}
+
+		&__body {
+			svg {
+				fill: color('primary');
+			}
+		}
+	}
+
+	.section-background--theme & {
+		&__container {
+			background-color: var(--theme-icon-btn-grid);
+
+			&:has(a:focus-visible),
+			&:has(a:hover) {
+				background-color: var(--theme-icon-btn-grid-hover);
+
+				.#{$block}__heading {
+					color: color('ink');
+				}
+
+				.#{$block}__body {
+					svg {
+						fill: color('ink');
+					}
+				}
+			}
+		}
+
+		&__heading {
+			color: var(--theme-icon-btn-grid-text);
+		}
+
+		&__body {
+			svg {
+				fill: var(--theme-icon-btn-grid-text);
+			}
+		}
+	}
+}

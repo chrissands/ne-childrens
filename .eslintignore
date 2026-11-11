@@ -1,4 +1,26 @@
 helix-importer-ui
+scripts/uswds*
+scripts/deps
+gulpfile.js
+blocks/form/rules/*
+blocks/form/rules-doc/*
+scripts/editor-support-rte.js
+scripts/editor-support.js
+scripts/form-editor-support.js
+tools/plugins/accessibility-mode
 plugins/
 scripts/sidekick.js
 libs/
+ncc-redesign/
+content/
+ue/
+# legacy files from the original USWDS starter (not used by the Sower site)
+component-models.json
+component-definition.json
+component-filters.json
+scripts/build-uswds.js
+uswds.config.js
+tools/demo/
+tools/demo-app/
+tools/quick-edit/
+blocks/tabs/
