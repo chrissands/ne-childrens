@@ -1,6 +1,6 @@
 # Migration brief and page content: Nebraska Children's Commission
 
-Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this file as the target.
+Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this file as the target. Then build the new meeting archive (section below), which replaces 85 old pages with one page, one custom block and one data sheet.
 
 ## Source pages (migrate these five)
 
@@ -10,6 +10,18 @@ Migrate five pages of the Nebraska Children's Commission site (https://childrens
 4. https://childrens.nebraska.gov/about.html
 5. https://childrens.nebraska.gov/ActiveSubgroups.html
 
+## Meeting archive (replaces 85 pages)
+
+Source pages replaced: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html plus the 84 pages named `/Meetings/PastMeetingDocs<Group><YY>.html` (for example `PastMeetingDocsNCC19.html`). Do not migrate those individually.
+
+1. Add the custom block (code at the end of this file) to the Sower-based repo's `blocks/` folder. Follow the repo's lint rules; it imports only `toClassName` from `scripts/aem.js` and `domEl` from `scripts/dom-helpers.js`.
+2. Publish ncc-redesign/data/meetings.json from the repo as a sheet at `/data/meetings` (served as `/data/meetings.json`). Columns: group, slug, date, type, title, url, note. One row per document.
+3. Create `/meetings` from `plain/meetings.plain.html`. The block is authored as one link to `/data/meetings.json`.
+4. Load ncc-redesign/redirects/meeting-redirects.csv from the repo into the site's redirects sheet (86 rows: old URL to `/meetings?group=<slug>&year=<yyyy>`).
+5. Verify: all 309 meetings and 1,809 documents are reachable; `?group=ncc&year=2019` shows 6 meetings and 88 documents; every document link opens the original PDF on childrens.nebraska.gov.
+
+The PDFs stay where they are. This migration only moves the pages, not the files.
+
 ## Target
 
 - Design system: Sower, https://github.com/OCIOStateOfNebraska/stateofnebraska-aem (USWDS-based Edge Delivery Services blocks, authored in Document Authoring). Reference site: https://main--stateofnebraska-aem--ociostateofnebraska.aem.page/
@@ -18,7 +30,7 @@ Migrate five pages of the Nebraska Children's Commission site (https://childrens
 
 ## What this file contains
 
-Everything needed is in this single file: this brief, then the authoring markup for each of the five pages, then the shared nav and footer. Each page block below is the `<main>` content (one div per section, blocks as div.block-name with row and cell divs). There are no other files.
+This brief, then the authoring markup for each page, the shared nav and footer, and the code of the custom meeting-archive block. The meeting data sheet (about 0.5 MB) and the redirect list are in the repo at ncc-redesign/data/meetings.json and ncc-redesign/redirects/meeting-redirects.csv; they are too large to inline here.
 
 ## Page-level settings
 
@@ -34,7 +46,7 @@ Set `template`, `layout`, `theme`, `brandslug` ("Nebraska Children's Commission"
 
 ## Blocks used
 
-hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
+meeting-archive (custom, only on /meetings), hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
 
 ## Rules
 
@@ -57,11 +69,11 @@ hero-homepage (built automatically from the first section on the homepage), hero
 
 ## Out of scope
 
-Meeting documents, committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
+Current Meeting Documents, committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
 
 ## Done means
 
-- Each of the five pages renders on the Sower design system and follows the markup below (teal and gold Sower default theme, wave hero, card grids, tables).
+- Each page renders on the Sower design system and follows the markup below (teal and gold Sower default theme, wave hero, card grids, tables).
 - Header nav and footer render from the fragments. The Subgroups menu has 11 links and should render as a two-column dropdown.
 - Every link, PDF URL and word from the source appears on the migrated page (except the changes listed above).
 - No console errors, no broken images, one H1 per page, in-page navigation lists every H2 on Publications, Legislative and About.
@@ -216,6 +228,25 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 </div>
 ```
 
+## meetings.html
+
+Source URL: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html (and 84 per-year pages; see redirects)
+Page metadata: template=default, theme=default, brandslug=Nebraska Children's Commission, copyrightslug=State of Nebraska, nav=/nav, footer=/footer
+
+```html
+<div data-section="page-header" data-intent="title the page" data-layout="full-bleed">
+<h1 id="meeting-documents">Meeting Documents</h1>
+<p><picture><source type="image/jpeg" srcset="https://childrens.nebraska.gov/img/bg-image-new.jpg" media="(min-width: 600px)"><img loading="lazy" src="https://childrens.nebraska.gov/img/bg-image-new.jpg" alt=""></picture></p>
+</div>
+<div data-section="intro" data-intent="say what the archive holds and where upcoming meetings are" data-layout="contained">
+<p>Agendas, minutes, and handouts for the Nebraska Children's Commission and its committees. Choose a group and year, or search document titles.</p>
+<p>Looking for an upcoming meeting? See <a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a>.</p>
+</div>
+<div data-section="archive" data-intent="let people find any past meeting document in two steps" data-layout="stack">
+<div class="meeting-archive"><div><div><p><a href="/data/meetings.json">/data/meetings.json</a></p></div></div></div>
+</div>
+```
+
 ---
 
 # Global fragments
@@ -224,7 +255,7 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 
 ```html
 <div><p><picture><source type="image/png" srcset="https://childrens.nebraska.gov/img/ChildrensLogo.png" media="(min-width: 600px)"><img loading="lazy" src="https://childrens.nebraska.gov/img/ChildrensLogo.png" alt="Nebraska Children's Commission logo" width="125" height="125"></picture></p><p><a href="./index.html">Nebraska Children's Commission home</a></p><p><strong>Nebraska Children's Commission</strong></p></div>
-<div><ul><li><p>Meeting Info</p><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">Calendar</a></li><li><a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a></li><li><a href="https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html">Past Meeting Documents</a></li></ul></li><li><p>Resources</p><ul><li><a href="./publications.html">Reports</a></li><li><a href="./Legislative.html">Legislative</a></li><li><a href="https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html">Past Documents</a></li></ul></li><li><p>Subgroups</p><ul><li><a href="https://childrens.nebraska.gov/Committees/ARCommittee.html">Alternative Response (AR) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/B2ICommittee.html">Bridge to Independence (B2i) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/FCRateCommittee.html">Foster Care Reimbursement Rate Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/JuvenileServicesCommittee.html">Juvenile Services Committee (JSC)</a></li><li><a href="https://childrens.nebraska.gov/Committees/PsychotropicMedicationCommittee.html">Psychotropic Medication Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/SFACommittee.html">Strengthening Families Act Committee</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/CommunityOwnershipWorkgroup.html">Community Ownership of Child Well Being Workgroup</a></li><li><a href="https://childrens.nebraska.gov/Taskforces/LegalPartiesTaskforce.html">Legal Parties Taskforce</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/WorkforceWorkgroup.html">Workforce Workgroup</a></li><li><a href="./ActiveSubgroups.html">See All Active Groups</a></li><li><a href="https://childrens.nebraska.gov/ArchivedSubgroups.html">See All Archived Groups</a></li></ul></li><li><p><a href="./about.html">About Us</a></p></li><li><p>News</p><ul><li><a href="https://childrens.nebraska.gov/News/BillsOfInterest.html">Bills of Interest</a></li><li><a href="https://childrens.nebraska.gov/News/MembershipOpenings.html">Membership Openings</a></li></ul></li><li><p><a href="https://childrens.nebraska.gov/contact.html">Contact</a></p></li></ul></div>
+<div><ul><li><p>Meeting Info</p><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">Calendar</a></li><li><a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a></li><li><a href="./meetings.html">Past Meeting Documents</a></li></ul></li><li><p>Resources</p><ul><li><a href="./publications.html">Reports</a></li><li><a href="./Legislative.html">Legislative</a></li><li><a href="./meetings.html">Past Documents</a></li></ul></li><li><p>Subgroups</p><ul><li><a href="https://childrens.nebraska.gov/Committees/ARCommittee.html">Alternative Response (AR) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/B2ICommittee.html">Bridge to Independence (B2i) Advisory Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/FCRateCommittee.html">Foster Care Reimbursement Rate Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/JuvenileServicesCommittee.html">Juvenile Services Committee (JSC)</a></li><li><a href="https://childrens.nebraska.gov/Committees/PsychotropicMedicationCommittee.html">Psychotropic Medication Committee</a></li><li><a href="https://childrens.nebraska.gov/Committees/SFACommittee.html">Strengthening Families Act Committee</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/CommunityOwnershipWorkgroup.html">Community Ownership of Child Well Being Workgroup</a></li><li><a href="https://childrens.nebraska.gov/Taskforces/LegalPartiesTaskforce.html">Legal Parties Taskforce</a></li><li><a href="https://childrens.nebraska.gov/Workgroups/WorkforceWorkgroup.html">Workforce Workgroup</a></li><li><a href="./ActiveSubgroups.html">See All Active Groups</a></li><li><a href="https://childrens.nebraska.gov/ArchivedSubgroups.html">See All Archived Groups</a></li></ul></li><li><p><a href="./about.html">About Us</a></p></li><li><p>News</p><ul><li><a href="https://childrens.nebraska.gov/News/BillsOfInterest.html">Bills of Interest</a></li><li><a href="https://childrens.nebraska.gov/News/MembershipOpenings.html">Membership Openings</a></li></ul></li><li><p><a href="https://childrens.nebraska.gov/contact.html">Contact</a></p></li></ul></div>
 <div><p><a href="https://www.nebraska.gov/search/">Search</a></p></div>
 ```
 
@@ -232,7 +263,7 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 
 ```html
 <div><div class="footer-navigation">
-<div><div><h2 id="meetings">Meetings</h2><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">The NCC Calendar</a></li><li><a href="https://www.nebraska.gov/calendar/index.cgi">Nebraska Public Meeting Calendar</a></li><li><a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a></li><li><a href="https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html">Past Meeting Documents</a></li></ul></div>
+<div><div><h2 id="meetings">Meetings</h2><ul><li><a href="https://calendar.google.com/calendar/u/0?cid=bmViY2hpbGRyZW5AZ21haWwuY29t">The NCC Calendar</a></li><li><a href="https://www.nebraska.gov/calendar/index.cgi">Nebraska Public Meeting Calendar</a></li><li><a href="https://childrens.nebraska.gov/Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a></li><li><a href="./meetings.html">Past Meeting Documents</a></li></ul></div>
 <div><h2 id="resources">Resources</h2><ul><li><a href="./publications.html">Publications and Reports</a></li><li><a href="./Legislative.html">Legislative</a></li><li><a href="https://childrens.nebraska.gov/News/BillsOfInterest.html">Bills of Interest</a></li></ul></div>
 <div><h2 id="subgroups">Subgroups</h2><ul><li><a href="./ActiveSubgroups.html">Active Subgroups</a></li><li><a href="https://childrens.nebraska.gov/ArchivedSubgroups.html">Archived Subgroups</a></li></ul></div>
 <div><h2 id="commission">Commission</h2><ul><li><a href="./about.html">About the NCC</a></li><li><a href="https://childrens.nebraska.gov/News/MembershipOpenings.html">Membership Openings</a></li><li><a href="https://childrens.nebraska.gov/MemberResources.html">Member Resources</a></li><li><a href="https://childrens.nebraska.gov/contact.html">Contact</a></li></ul></div></div>
@@ -243,4 +274,398 @@ Page metadata: template=default, theme=default, brandslug=Nebraska Children's Co
 <div><div></div></div>
 <div><div><ul><li><a href="http://www.nebraska.gov">Nebraska.gov</a></li><li><a href="http://www.nebraska.gov/policies.html">Security, Privacy, Acceptable Use, &amp; Accessibility Policies</a></li></ul></div></div>
 </div></div>
+```
+
+---
+
+# Custom block: meeting-archive
+
+## blocks/meeting-archive/meeting-archive.js
+
+```js
+import { toClassName } from '../../scripts/aem.js';
+import { domEl } from '../../scripts/dom-helpers.js';
+
+const PAGE_SIZE = 20;
+const TYPE_LABEL = { agenda: 'Agenda', minutes: 'Minutes' };
+
+/**
+ * Fetches the meeting sheet (one row per document: group, slug, date, type, title, url, note).
+ * @param {string} href URL authored in the block
+ * @returns {Promise<Array>} sheet rows
+ */
+async function fetchSheet( href ) {
+	const url = new URL( href, window.location.href );
+	url.searchParams.set( 'limit', '10000' );
+	const resp = await fetch( url );
+	if ( !resp.ok ) throw new Error( `meeting-archive: ${resp.status} for ${url}` );
+	const json = await resp.json();
+	return json.data || [];
+}
+
+/**
+ * Groups document rows into meetings, newest first.
+ * @param {Array} rows sheet rows
+ * @returns {Array} meetings with their documents
+ */
+function toMeetings( rows ) {
+	const map = new Map();
+	rows.forEach( ( row ) => {
+		const key = `${row.group}|${row.date}`;
+		if ( !map.has( key ) ) {
+			map.set( key, {
+				group: row.group, slug: row.slug || toClassName( row.group ), date: row.date, year: row.date.slice( 0, 4 ), note: '', docs: [],
+			} );
+		}
+		const meeting = map.get( key );
+		if ( row.note && !meeting.note ) meeting.note = row.note;
+		if ( row.url ) meeting.docs.push( { type: row.type, title: row.title, url: row.url } );
+	} );
+	return [...map.values()].sort( ( a, b ) => b.date.localeCompare( a.date ) || a.group.localeCompare( b.group ) );
+}
+
+const formatDate = ( iso ) => new Date( `${iso}T12:00:00` ).toLocaleDateString( 'en-US', {
+	year: 'numeric', month: 'long', day: 'numeric',
+} );
+
+/**
+ * Builds one meeting card.
+ * @param {object} meeting grouped meeting
+ * @param {boolean} showGroup whether to label the committee
+ * @returns {HTMLElement} list item
+ */
+function renderMeeting( meeting, showGroup ) {
+	const primary = meeting.docs.filter( ( d ) => d.type === 'agenda' || d.type === 'minutes' );
+	const handouts = meeting.docs.filter( ( d ) => d.type === 'handout' );
+	const additional = meeting.docs.filter( ( d ) => d.type === 'additional' );
+
+	const li = domEl( 'li', { class: 'meeting-archive__meeting' } );
+	const head = domEl( 'div', { class: 'meeting-archive__head' },
+		domEl( 'h3', { class: 'meeting-archive__date' }, domEl( 'time', { datetime: meeting.date }, formatDate( meeting.date ) ) ) );
+	if ( showGroup ) head.append( domEl( 'p', { class: 'meeting-archive__group' }, meeting.group ) );
+	li.append( head );
+	if ( meeting.note ) li.append( domEl( 'p', { class: 'meeting-archive__note' }, meeting.note ) );
+
+	if ( primary.length ) {
+		const ul = domEl( 'ul', { class: 'meeting-archive__primary usa-list usa-list--unstyled' } );
+		primary.forEach( ( d ) => {
+			ul.append( domEl( 'li', {},
+				domEl( 'a', {
+					href: d.url,
+					class: 'usa-link usa-link--pdf meeting-archive__doc',
+					target: '_blank',
+					'aria-label': `${TYPE_LABEL[d.type]}, ${meeting.group}, ${formatDate( meeting.date )}`,
+				}, TYPE_LABEL[d.type] ) ) );
+		} );
+		li.append( ul );
+	}
+
+	[['Meeting handouts', handouts], ['Additional materials', additional]].forEach( ( [label, docs] ) => {
+		if ( !docs.length ) return;
+		const list = domEl( 'ul', { class: 'meeting-archive__materials usa-list' } );
+		docs.forEach( ( d ) => list.append( domEl( 'li', {},
+			domEl( 'a', { href: d.url, class: 'usa-link usa-link--pdf', target: '_blank' }, d.title ) ) ) );
+		li.append( domEl( 'details', { class: 'meeting-archive__details' },
+			domEl( 'summary', {}, `${label} (${docs.length})` ), list ) );
+	} );
+
+	if ( !meeting.docs.length ) li.append( domEl( 'p', { class: 'meeting-archive__empty-doc' }, 'No documents posted.' ) );
+	return li;
+}
+
+function field( id, label, control ) {
+	return domEl( 'div', { class: 'meeting-archive__field' }, domEl( 'label', { for: id }, label ), control );
+}
+
+/**
+ * Meeting archive: filter, search and browse every meeting's documents from one data sheet.
+ * Authoring: a single link to the sheet (e.g. /data/meetings.json). Supports ?group=&year=&q=.
+ * @param {HTMLElement} block The block element
+ */
+export default async function decorate( block ) {
+	const link = block.querySelector( 'a' );
+	if ( !link ) return;
+	block.textContent = '';
+	block.setAttribute( 'aria-busy', 'true' );
+
+	let meetings;
+	try {
+		meetings = toMeetings( await fetchSheet( link.href ) );
+	} catch ( e ) {
+		// eslint-disable-next-line no-console
+		console.error( e );
+		block.append( domEl( 'p', { class: 'meeting-archive__error' }, 'Meeting documents are unavailable right now. Please try again later.' ) );
+		block.removeAttribute( 'aria-busy' );
+		return;
+	}
+
+	const groups = [...new Map( meetings.map( ( m ) => [m.slug, m.group] ) ).entries()].sort( ( a, b ) => a[1].localeCompare( b[1] ) );
+	const params = new URLSearchParams( window.location.search );
+	const state = {
+		group: params.get( 'group' ) || '', year: params.get( 'year' ) || '', q: params.get( 'q' ) || '', shown: PAGE_SIZE,
+	};
+
+	const groupSelect = domEl( 'select', { id: 'ma-group', class: 'meeting-archive__select' }, domEl( 'option', { value: '' }, 'All groups' ),
+		...groups.map( ( [slug, name] ) => domEl( 'option', { value: slug }, name ) ) );
+	const yearSelect = domEl( 'select', { id: 'ma-year', class: 'meeting-archive__select' } );
+	const search = domEl( 'input', {
+		id: 'ma-q', class: 'meeting-archive__input', type: 'search', autocomplete: 'off', placeholder: 'Agenda, minutes, report title',
+	} );
+	const reset = domEl( 'button', { type: 'button', class: 'usa-button usa-button--outline meeting-archive__reset' }, 'Clear filters' );
+	const form = domEl( 'form', { class: 'meeting-archive__filters', role: 'search', 'aria-label': 'Filter meeting documents' },
+		field( 'ma-group', 'Group', groupSelect ), field( 'ma-year', 'Year', yearSelect ),
+		field( 'ma-q', 'Search documents', search ), reset );
+	const count = domEl( 'p', { class: 'meeting-archive__count', role: 'status', 'aria-live': 'polite' } );
+	const list = domEl( 'ol', { class: 'meeting-archive__list' } );
+	const more = domEl( 'button', { type: 'button', class: 'usa-button meeting-archive__more' }, 'Show more meetings' );
+	block.append( form, count, list, domEl( 'div', { class: 'meeting-archive__footer' }, more ) );
+
+	const matches = () => {
+		const needle = state.q.trim().toLowerCase();
+		return meetings.filter( ( m ) => ( !state.group || m.slug === state.group )
+			&& ( !state.year || m.year === state.year )
+			&& ( !needle || m.docs.some( ( d ) => d.title.toLowerCase().includes( needle ) )
+				|| m.note.toLowerCase().includes( needle ) || m.group.toLowerCase().includes( needle ) ) );
+	};
+
+	const fillYears = () => {
+		const years = [...new Set( meetings.filter( ( m ) => !state.group || m.slug === state.group ).map( ( m ) => m.year ) )].sort().reverse();
+		if ( state.year && !years.includes( state.year ) ) state.year = '';
+		yearSelect.replaceChildren( domEl( 'option', { value: '' }, 'All years' ), ...years.map( ( y ) => domEl( 'option', { value: y }, y ) ) );
+		yearSelect.value = state.year;
+	};
+
+	const render = ( keepShown ) => {
+		if ( !keepShown ) state.shown = PAGE_SIZE;
+		const found = matches();
+		const visible = found.slice( 0, state.shown );
+		list.replaceChildren( ...visible.map( ( m ) => renderMeeting( m, !state.group ) ) );
+		const docCount = found.reduce( ( n, m ) => n + m.docs.length, 0 );
+		count.textContent = found.length
+			? `${found.length} ${found.length === 1 ? 'meeting' : 'meetings'}, ${docCount} documents${found.length > visible.length ? ` (showing ${visible.length})` : ''}`
+			: 'No meetings match these filters.';
+		more.hidden = found.length <= visible.length;
+		const next = new URLSearchParams();
+		if ( state.group ) next.set( 'group', state.group );
+		if ( state.year ) next.set( 'year', state.year );
+		if ( state.q.trim() ) next.set( 'q', state.q.trim() );
+		const qs = next.toString();
+		window.history.replaceState( null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}` );
+	};
+
+	groupSelect.value = groups.some( ( [slug] ) => slug === state.group ) ? state.group : '';
+	state.group = groupSelect.value;
+	search.value = state.q;
+	fillYears();
+
+	groupSelect.addEventListener( 'change', () => { state.group = groupSelect.value; fillYears(); render(); } );
+	yearSelect.addEventListener( 'change', () => { state.year = yearSelect.value; render(); } );
+	let timer;
+	search.addEventListener( 'input', () => { clearTimeout( timer ); timer = setTimeout( () => { state.q = search.value; render(); }, 200 ); } );
+	form.addEventListener( 'submit', ( e ) => e.preventDefault() );
+	reset.addEventListener( 'click', () => {
+		Object.assign( state, { group: '', year: '', q: '' } );
+		groupSelect.value = ''; search.value = ''; fillYears(); render();
+	} );
+	more.addEventListener( 'click', () => { state.shown += PAGE_SIZE; render( true ); } );
+
+	render();
+	block.removeAttribute( 'aria-busy' );
+}
+```
+
+## blocks/meeting-archive/meeting-archive.css
+
+```css
+.meeting-archive {
+	--ma-primary: var(--theme-hero-primary, #00607f);
+	--ma-dark: var(--theme-card-heading, #003a4d);
+	--ma-accent: var(--theme-card-accent, #ffc44d);
+	--ma-surface: #fff;
+	--ma-line: #dfe1e2;
+}
+
+.meeting-archive__filters {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1rem;
+	align-items: end;
+	padding: 1.25rem;
+	margin-bottom: 1rem;
+	background: var(--ma-surface);
+	border-top: 4px solid var(--ma-accent);
+	border-radius: 0 0 .25rem .25rem;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+@media (min-width: 880px) {
+	.meeting-archive__filters {
+		grid-template-columns: minmax(0, 1.4fr) minmax(0, .7fr) minmax(0, 1.4fr) auto;
+	}
+}
+
+.meeting-archive__field {
+	display: flex;
+	flex-direction: column;
+	gap: .375rem;
+}
+
+.meeting-archive__field label {
+	font-weight: 700;
+	font-size: .95rem;
+	color: var(--ma-dark);
+}
+
+.meeting-archive .meeting-archive__select,
+.meeting-archive .meeting-archive__input {
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	appearance: none;
+	height: 2.75rem;
+	min-height: 2.75rem;
+	margin: 0;
+	padding: 0 .75rem;
+	font: inherit;
+	color: #1b1b1b;
+	background-color: #fff;
+	border: 1px solid #565c65;
+	border-radius: 0;
+	width: 100%;
+}
+
+.meeting-archive .meeting-archive__select {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23565c65' stroke-width='2'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right .75rem center;
+	padding-right: 2.25rem;
+}
+
+.meeting-archive__select:focus,
+.meeting-archive__input:focus,
+.meeting-archive__details summary:focus-visible,
+.meeting-archive__reset:focus-visible,
+.meeting-archive__more:focus-visible {
+	outline: .25rem solid #2491ff;
+	outline-offset: 0;
+}
+
+.meeting-archive__reset {
+	margin: 0;
+	height: 2.75rem;
+}
+
+.meeting-archive__count {
+	margin: 1.25rem 0 .75rem;
+	font-weight: 700;
+	color: var(--ma-dark);
+}
+
+.meeting-archive__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: .75rem;
+}
+
+.meeting-archive__meeting {
+	margin: 0;
+	padding: 1rem 1.25rem;
+	background: var(--ma-surface);
+	border: 1px solid var(--ma-line);
+	border-left: 4px solid var(--ma-primary);
+	border-radius: .25rem;
+}
+
+.meeting-archive__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	column-gap: 1rem;
+	row-gap: .125rem;
+}
+
+.meeting-archive__date {
+	margin: 0;
+	font-size: 1.25rem;
+	line-height: 1.3;
+	color: var(--ma-dark);
+}
+
+.meeting-archive__group {
+	margin: 0;
+	font-size: .95rem;
+	color: #565c65;
+}
+
+.meeting-archive__note {
+	margin: .5rem 0 0;
+	font-size: .95rem;
+	font-style: italic;
+}
+
+.meeting-archive__primary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .25rem 1.5rem;
+	margin: .75rem 0 0;
+	padding: 0;
+}
+
+.meeting-archive__primary li {
+	margin: 0;
+	font-weight: 700;
+}
+
+.meeting-archive__details {
+	margin-top: .75rem;
+	border-top: 1px solid var(--ma-line);
+	padding-top: .5rem;
+}
+
+.meeting-archive__details summary {
+	cursor: pointer;
+	font-weight: 700;
+	color: var(--ma-primary);
+	padding: .25rem 0;
+}
+
+.meeting-archive__materials {
+	margin: .5rem 0 .25rem;
+	padding-left: 1.25rem;
+}
+
+.meeting-archive__materials li {
+	margin: .25rem 0;
+}
+
+.meeting-archive__empty-doc {
+	margin: .5rem 0 0;
+	color: #565c65;
+}
+
+.meeting-archive__footer {
+	margin-top: 1.25rem;
+	text-align: center;
+}
+
+.meeting-archive__more[hidden] {
+	display: none;
+}
+
+.meeting-archive__error {
+	padding: 1rem;
+	border-left: 4px solid #b50909;
+	background: #f4e3db;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.meeting-archive__meeting {
+		transition: box-shadow .15s ease;
+	}
+
+	.meeting-archive__meeting:hover {
+		box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
+	}
+}
 ```

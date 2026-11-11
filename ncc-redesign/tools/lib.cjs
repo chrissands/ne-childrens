@@ -5,8 +5,9 @@ const ROOT = path.resolve(__dirname, '..');
 const LIVE = 'https://childrens.nebraska.gov/';
 const SOWER = 'https://main--stateofnebraska-aem--ociostateofnebraska.aem.page';
 const PAGES = { '': 'index.html', 'index.html': 'index.html', 'publications.html': 'publications.html',
-  'legislative.html': 'Legislative.html', 'about.html': 'about.html', 'activesubgroups.html': 'ActiveSubgroups.html' };
+  'legislative.html': 'Legislative.html', 'about.html': 'about.html', 'activesubgroups.html': 'ActiveSubgroups.html', 'meetings.html': 'meetings.html' };
 
+const MEETING_SLUG = { ncc: 'ncc', ar: 'alternative-response', b2i: 'bridge-to-independence', fcrrc: 'foster-care-reimbursement-rate', jsc: 'juvenile-services', ojs: 'juvenile-services', locsc: 'level-of-care', meds: 'psychotropic-medication', sfa: 'strengthening-families-act', ntf: 'strengthening-families-act', normalcy: 'normalcy-task-force' };
 const decodeEnt = (s) => s.replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&rsquo;/g, '\u2019')
   .replace(/&lsquo;/g, '\u2018').replace(/&quot;/g, '"');
 const esc = (s) => s.replace(/&(?!(amp|lt|gt|quot|#\d+|[a-z]+);)/gi, '&amp;');
@@ -26,6 +27,9 @@ function fixHref(raw) {
   if (abs.hostname.replace(/^www\./, '') === 'childrens.nebraska.gov') {
     const key = abs.pathname.replace(/^\//, '').toLowerCase();
     if (PAGES[key] !== undefined && !abs.hash) return './' + PAGES[key];
+    if (key === 'meetings/pastmeetingdocs.html') return './meetings.html';
+    const my = key.match(/^meetings\/pastmeetingdocs(.+?)(\d\d)\.html$/);
+    if (my && MEETING_SLUG[my[1]]) return './meetings.html?group=' + MEETING_SLUG[my[1]] + '&amp;year=20' + my[2];
   }
   if (abs.protocol === 'http:' && /nebraska(legislature)?\.gov$/.test(abs.hostname)) abs.protocol = 'https:';
   return esc(abs.href.replace(/&/g, '&amp;').replace(/&amp;amp;/g, '&amp;'));

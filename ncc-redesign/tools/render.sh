@@ -3,7 +3,7 @@
 cd /workspace/ne-childrens
 T=${TAB:-672346445}
 W=${3:-1280}
-playwright-cli goto https://childrens.nebraska.gov/robots.txt --tab=$T >/dev/null 2>&1
+playwright-cli goto "https://childrens.nebraska.gov/robots.txt${QS}" --tab=$T >/dev/null 2>&1
 node -e "
 const fs=require('fs');const h=fs.readFileSync('out/$1','utf8');
 fs.writeFileSync('/tmp/inject.js','document.open();document.write('+JSON.stringify(h)+');document.close();\"ok\"');"

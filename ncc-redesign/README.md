@@ -12,6 +12,7 @@ Design system: https://github.com/OCIOStateOfNebraska/stateofnebraska-aem (Sower
 | Legislative | `Legislative.html` | `default` + `in-page-nav` | hero, in-page-navigation, table (standard) |
 | About us | `about.html` | `default` + `in-page-nav` | hero, in-page-navigation, table (col-header), summary-box |
 | Active subgroups | `ActiveSubgroups.html` | `default` | hero, info-card-grid (x2) |
+| Meeting archive (new) | `meetings.html` | `default` | hero, meeting-archive (custom) |
 
 - `plain/*.plain.html`: just the `<main>` content (sections and blocks), in the form DA / EDS ingests. Use these as the authoring source.
 - `fragments/nav.plain.html`, `fragments/footer.plain.html`: global header nav and footer (`header` and `footer-navigation` blocks).
@@ -50,3 +51,30 @@ Theme is Sower `default` (teal and gold). Set `<meta name="theme">` to `green` o
 ## Rebuild
 
 `node tools/build.cjs` regenerates everything in `out/` from `src/` (saved copies of the live pages).
+
+## Meeting archive (new, replaces 84 pages)
+
+`meetings.html` (target path `/meetings`) replaces `/Meetings/PastMeetingDocs.html` and the 84 per-group, per-year pages
+(`/Meetings/PastMeetingDocsNCC19.html`, `...AR22.html`, and so on). One custom block, `meeting-archive`, reads one data sheet and lets
+visitors filter by group and year, search document titles, and open any agenda, minutes or handout.
+
+| Piece | File |
+|---|---|
+| Page | `meetings.html`, `plain/meetings.plain.html` |
+| Block | `blocks/meeting-archive/meeting-archive.js` and `.css` (follows Sower block conventions; copy into the repo's `blocks/`) |
+| Data | `data/meetings.json`: EDS sheet, 1,810 rows (one per document), 309 meetings, 9 groups, 2012 to 2026. Columns: `group, slug, date, type, title, url, note`. Publish it as a sheet at `/data/meetings` so it is served as `/data/meetings.json` |
+| Redirects | `redirects/meeting-redirects.csv`: 86 rows, old URL to `/meetings?group=<slug>&year=<yyyy>`. Load into the site's redirects sheet |
+| Builders | `tools/meetings/scrape-meetings.cjs` (source pages to rows), `tools/build-meetings.cjs` (rows to sheet and redirects) |
+
+Authoring the block is one link: `/data/meetings.json` in a `meeting-archive` block. Adding a meeting is adding rows to the sheet.
+Supported URL parameters: `group`, `year`, `q`.
+
+Data decisions to review:
+- Renamed committees are merged: "Juvenile Services (OJS) Committee" (2012-2018) and "Juvenile Services Committee (JSC)" (2019 on) are one group; "Strengthening Families Act Taskforce/Committee" pages are one group. "Normalcy Task Force" stays separate.
+- Document names and PDF URLs are exactly as on the old pages. Document types: agenda and minutes (the two links in the old second column), handout, additional (items under an "Additional Materials" label).
+- Every document link on the 84 pages was captured. Two exceptions are not rows: one stray empty link outside any table on the 2019 JSC page, and 13 exact duplicate links within the same meeting.
+- Typo fixed in the group name: "Reimbursment" is "Reimbursement".
+- New interface text: page intro, filter labels, "Clear filters", "Show more meetings", "Meeting handouts", "Additional materials".
+- Links on the five earlier pages that pointed at Past Meeting Documents now point to `/meetings`.
+- Dates in the sheet are ISO (`YYYY-MM-DD`); the block formats them for display.
+- The block's filter and search run in the browser on the whole sheet (about 0.5 MB). That is fine at this size. If the archive grows past a few thousand meetings, move to a paged query.

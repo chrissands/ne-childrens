@@ -1,7 +1,7 @@
 const fs = require('fs'); const L = require('./lib.cjs');
 const strip = (h) => L.decodeEnt(h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ')).replace(/[\u2018\u2019]/g, "'").replace(/[\u2013\u2014]/g, '-').replace(/\s+/g, ' ').toLowerCase();
 const words = (t) => t.match(/[a-z0-9][a-z0-9'.&\/-]*/g) || [];
-const pages = { 'index.html': 'index.html', 'about.html': 'about.html', 'publications.html': 'publications.html', 'Legislative.html': 'Legislative.html', 'ActiveSubgroups.html': 'ActiveSubgroups.html' };
+const pages = { "index.html": "index.html", 'about.html': 'about.html', 'publications.html': 'publications.html', 'Legislative.html': 'Legislative.html', 'ActiveSubgroups.html': 'ActiveSubgroups.html' };
 let bad = 0;
 for (const f of Object.keys(pages)) {
   const srcMain = L.mainHtml(f);

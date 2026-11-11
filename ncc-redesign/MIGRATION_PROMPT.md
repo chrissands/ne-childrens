@@ -1,6 +1,6 @@
 # Migration prompt: Nebraska Children's Commission
 
-Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this package as the target.
+Migrate five pages of the Nebraska Children's Commission site (https://childrens.nebraska.gov/) onto the State of Nebraska Sower design system, using the redesigned markup in this package as the target. Then build the new meeting archive (section below), which replaces 85 old pages with one page, one custom block and one data sheet.
 
 ## Source pages (migrate these five)
 
@@ -9,6 +9,18 @@ Migrate five pages of the Nebraska Children's Commission site (https://childrens
 3. https://childrens.nebraska.gov/Legislative.html
 4. https://childrens.nebraska.gov/about.html
 5. https://childrens.nebraska.gov/ActiveSubgroups.html
+
+## Meeting archive (replaces 85 pages)
+
+Source pages replaced: https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html plus the 84 pages named `/Meetings/PastMeetingDocs<Group><YY>.html` (for example `PastMeetingDocsNCC19.html`). Do not migrate those individually.
+
+1. Add the custom block `blocks/meeting-archive/meeting-archive.js` and `.css` from this package to the Sower-based repo's `blocks/` folder. Follow the repo's lint rules; it imports only `toClassName` from `scripts/aem.js` and `domEl` from `scripts/dom-helpers.js`.
+2. Publish `data/meetings.json` as a sheet at `/data/meetings` (served as `/data/meetings.json`). Columns: group, slug, date, type, title, url, note. One row per document.
+3. Create `/meetings` from `plain/meetings.plain.html`. The block is authored as one link to `/data/meetings.json`.
+4. Load `redirects/meeting-redirects.csv` into the site's redirects sheet (86 rows: old URL to `/meetings?group=<slug>&year=<yyyy>`).
+5. Verify: all 309 meetings and 1,809 documents are reachable; `?group=ncc&year=2019` shows 6 meetings and 88 documents; every document link opens the original PDF on childrens.nebraska.gov.
+
+The PDFs stay where they are. This migration only moves the pages, not the files.
 
 ## Target
 
@@ -40,7 +52,7 @@ Set `template`, `layout`, `theme`, `brandslug` ("Nebraska Children's Commission"
 
 ## Blocks used
 
-hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
+meeting-archive (custom, only on /meetings), hero-homepage (built automatically from the first section on the homepage), hero and breadcrumb (automatic on interior pages), alert, info-card-grid, table (`col-header` variant on Publications and About, standard on Legislative), summary-box, in-page-navigation (from the `in-page-nav` layout), plus the header, footer-navigation and banner blocks.
 
 ## Rules
 
@@ -63,7 +75,7 @@ hero-homepage (built automatically from the first section on the homepage), hero
 
 ## Out of scope
 
-Meeting documents, committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
+Current Meeting Documents, committee and workgroup pages, news and bills of interest, contact, member resources and archived subgroups are not migrated. The nav and footer link to them on the live site.
 
 ## Done means
 

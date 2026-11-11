@@ -1,18 +1,83 @@
 {
   "project": "Nebraska Children's Commission redesign on the Sower design system",
-  "designSystem": { "repo": "https://github.com/OCIOStateOfNebraska/stateofnebraska-aem", "preview": "https://main--stateofnebraska-aem--ociostateofnebraska.aem.page/", "theme": "default" },
+  "designSystem": {
+    "repo": "https://github.com/OCIOStateOfNebraska/stateofnebraska-aem",
+    "preview": "https://main--stateofnebraska-aem--ociostateofnebraska.aem.page/",
+    "theme": "default"
+  },
   "capturedAt": "2026-11-11",
   "pages": [
-    { "sourceUrl": "https://childrens.nebraska.gov/", "html": "index.html", "authoring": "plain/index.plain.html", "template": "homepage", "layout": null },
-    { "sourceUrl": "https://childrens.nebraska.gov/publications.html", "html": "publications.html", "authoring": "plain/publications.plain.html", "template": "default", "layout": "in-page-nav" },
-    { "sourceUrl": "https://childrens.nebraska.gov/Legislative.html", "html": "Legislative.html", "authoring": "plain/Legislative.plain.html", "template": "default", "layout": "in-page-nav" },
-    { "sourceUrl": "https://childrens.nebraska.gov/about.html", "html": "about.html", "authoring": "plain/about.plain.html", "template": "default", "layout": "in-page-nav" },
-    { "sourceUrl": "https://childrens.nebraska.gov/ActiveSubgroups.html", "html": "ActiveSubgroups.html", "authoring": "plain/ActiveSubgroups.plain.html", "template": "default", "layout": null }
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/",
+      "html": "index.html",
+      "authoring": "plain/index.plain.html",
+      "template": "homepage",
+      "layout": null
+    },
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/publications.html",
+      "html": "publications.html",
+      "authoring": "plain/publications.plain.html",
+      "template": "default",
+      "layout": "in-page-nav"
+    },
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/Legislative.html",
+      "html": "Legislative.html",
+      "authoring": "plain/Legislative.plain.html",
+      "template": "default",
+      "layout": "in-page-nav"
+    },
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/about.html",
+      "html": "about.html",
+      "authoring": "plain/about.plain.html",
+      "template": "default",
+      "layout": "in-page-nav"
+    },
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/ActiveSubgroups.html",
+      "html": "ActiveSubgroups.html",
+      "authoring": "plain/ActiveSubgroups.plain.html",
+      "template": "default",
+      "layout": null
+    },
+    {
+      "sourceUrl": "https://childrens.nebraska.gov/Meetings/PastMeetingDocs.html",
+      "replaces": "84 per-group, per-year pages: /Meetings/PastMeetingDocs<Group><YY>.html (full list in redirects/meeting-redirects.csv)",
+      "html": "meetings.html",
+      "authoring": "plain/meetings.plain.html",
+      "targetPath": "/meetings",
+      "template": "default",
+      "layout": null,
+      "customBlocks": [
+        "meeting-archive"
+      ],
+      "data": "data/meetings.json",
+      "redirects": "redirects/meeting-redirects.csv"
+    }
   ],
-  "globalFragments": { "nav": "fragments/nav.plain.html", "footer": "fragments/footer.plain.html" },
+  "globalFragments": {
+    "nav": "fragments/nav.plain.html",
+    "footer": "fragments/footer.plain.html"
+  },
   "notes": [
     "Content and links are parsed from the source pages; see README.md 'Content decisions to review'.",
     "The <script> in each page head is a standalone-preview shim and should be removed in a Sower-based repo.",
     "Unredesigned pages (meetings, committees, news, contact, archived subgroups) still link to the live site."
+  ],
+  "customBlocks": [
+    {
+      "name": "meeting-archive",
+      "code": "blocks/meeting-archive/meeting-archive.js",
+      "style": "blocks/meeting-archive/meeting-archive.css",
+      "data": "data/meetings.json",
+      "dataFormat": "EDS sheet: one row per document, columns group, slug, date, type, title, url, note",
+      "queryParams": [
+        "group",
+        "year",
+        "q"
+      ]
+    }
   ]
 }

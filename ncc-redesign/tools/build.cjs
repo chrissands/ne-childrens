@@ -57,7 +57,10 @@ ${col('Commission', [lk('about.html', 'About the NCC'), lk('News/MembershipOpeni
 
 /* ---------- page shell ---------- */
 const tplSrc = (n) => fs.readFileSync(path.join(L.ROOT, 'tools/cache/tpl-' + n + '.js'), 'utf8').replace(/from '\.\.\/\.\.\/scripts\//g, "from '" + SOWER + '/scripts/');
-function shell({ file, title, description, template, layout, sections, extraMeta = '' }) {
+function shell({ file, title, description, template, layout, sections, extraMeta = '', blocks = [], data = {} }) {
+  const BLK = {};
+  blocks.forEach((n) => { BLK[n] = { js: fs.readFileSync(path.join(OUT, 'blocks', n, n + '.js'), 'utf8').replace(/from '\.\.\/\.\.\/scripts\//g, "from '" + SOWER + '/scripts/'), css: fs.readFileSync(path.join(OUT, 'blocks', n, n + '.css'), 'utf8') }; });
+  const DATA = {}; Object.entries(data).forEach(([p, f]) => { DATA[p] = fs.readFileSync(path.join(OUT, f), 'utf8'); });
   const NAV = navHtml(); const FOOT = footerHtml();
   const j = (s) => JSON.stringify(s).replace(/</g, '\\u003c');
   return `<!DOCTYPE html>
@@ -83,19 +86,24 @@ ${layout ? `<meta name="layout" content="${layout}">\n` : ''}<meta name="theme" 
 (function () {
   var S = ${j(SOWER)}, onEds = /\\.aem\\.(page|live)$/.test(location.hostname);
   var TPL = { default: ${j(tplSrc('default'))}, homepage: ${j(tplSrc('homepage'))} };
+  var BLK = ${j(BLK)}, DATA = ${j(DATA)};
   var FRAG = { '/nav.plain.html': ${j(NAV)}, '/footer.plain.html': ${j(FOOT)} };
   if (!onEds) {
     var of = window.fetch.bind(window);
     window.fetch = function (i, o) {
-      var u = new URL(typeof i === 'string' ? i : i.url, location.href);
+      var u = new URL(i && i.url ? i.url : String(i), location.href);
       if (u.origin === location.origin) {
+        if (DATA[u.pathname]) return Promise.resolve(new Response(DATA[u.pathname], { headers: { 'content-type': 'application/json' } }));
         if (FRAG[u.pathname]) return Promise.resolve(new Response(FRAG[u.pathname], { headers: { 'content-type': 'text/html' } }));
         if (/^\\/(placeholders|query-index|[a-z-]+\\.json)/.test(u.pathname)) return of(S + u.pathname + u.search, o);
       }
       return of(i, o);
     };
   }
-  if (!onEds) { var map = { imports: {} }; Object.keys(TPL).forEach(function (n) { map.imports[S + '/templates/' + n + '/' + n + '.js'] = URL.createObjectURL(new Blob([TPL[n]], { type: 'text/javascript' })); });
+  if (!onEds) { var map = { imports: {} };
+    Object.keys(BLK).forEach(function (n) { map.imports[S + '/blocks/' + n + '/' + n + '.js'] = URL.createObjectURL(new Blob([BLK[n].js], { type: 'text/javascript' }));
+      var st = document.createElement('style'); st.textContent = BLK[n].css; document.head.appendChild(st);
+      var dl = document.createElement('link'); dl.rel = 'stylesheet'; dl.href = S + '/blocks/' + n + '/' + n + '.css'; document.head.appendChild(dl); }); Object.keys(TPL).forEach(function (n) { map.imports[S + '/templates/' + n + '/' + n + '.js'] = URL.createObjectURL(new Blob([TPL[n]], { type: 'text/javascript' })); });
     var im = document.createElement('script'); im.type = 'importmap'; im.textContent = JSON.stringify(map); document.head.appendChild(im); }
   var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = (onEds ? '' : S) + '/styles/styles.css'; document.head.appendChild(css);
   (async function () {
@@ -250,8 +258,20 @@ function subgroups() {
   return shell({ file: 'ActiveSubgroups.html', title: `${BRAND} Active Subgroups`, description: `${statIntro} ${madeIntro}`.replace(/&rsquo;/g, "'"), template: 'default', sections: secs });
 }
 
+/* ---------- MEETING ARCHIVE ---------- */
+function meetings() {
+  const secs = [
+    section('page-header', 'title the page', 'full-bleed', `<h1 id="meeting-documents">Meeting Documents</h1>\n<p>${pic(HERO, '')}</p>`),
+    section('intro', 'say what the archive holds and where upcoming meetings are', 'contained',
+      `<p>Agendas, minutes, and handouts for the ${BRAND} and its committees. Choose a group and year, or search document titles.</p>\n<p>Looking for an upcoming meeting? See <a href="${LIVE}Meetings/CurrentMeetingDocs.html">Current Meeting Documents</a>.</p>`),
+    section('archive', 'let people find any past meeting document in two steps', 'stack',
+      block('meeting-archive', [['<p><a href="/data/meetings.json">/data/meetings.json</a></p>']])),
+  ];
+  return shell({ file: 'meetings.html', title: 'Meeting Documents', description: 'Agendas, minutes, and handouts for the Nebraska Children\'s Commission and its committees, 2012 to 2026.', template: 'default', sections: secs, blocks: ['meeting-archive'], data: { '/data/meetings.json': 'data/meetings.json' } });
+}
+
 fs.mkdirSync(OUT, { recursive: true });
-const out = { 'index.html': home(), 'about.html': about(), 'publications.html': publications(), 'Legislative.html': legislative(), 'ActiveSubgroups.html': subgroups() };
+const out = { 'index.html': home(), 'about.html': about(), 'publications.html': publications(), 'Legislative.html': legislative(), 'ActiveSubgroups.html': subgroups(), 'meetings.html': meetings() };
 for (const [f, html] of Object.entries(out)) fs.writeFileSync(path.join(OUT, f), html);
 fs.mkdirSync(path.join(OUT, 'fragments'), { recursive: true });
 fs.writeFileSync(path.join(OUT, 'fragments', 'nav.plain.html'), navHtml());
