@@ -56,7 +56,7 @@ function renderMeeting( meeting, showGroup ) {
 
 	const li = domEl( 'li', { class: 'meeting-archive__meeting' } );
 	const head = domEl( 'div', { class: 'meeting-archive__head' },
-		domEl( 'h3', { class: 'meeting-archive__date' }, domEl( 'time', { datetime: meeting.date }, formatDate( meeting.date ) ) ) );
+		domEl( 'h2', { class: 'meeting-archive__date' }, domEl( 'time', { datetime: meeting.date }, formatDate( meeting.date ) ) ) );
 	if ( showGroup ) head.append( domEl( 'p', { class: 'meeting-archive__group' }, meeting.group ) );
 	li.append( head );
 	if ( meeting.note ) li.append( domEl( 'p', { class: 'meeting-archive__note' }, meeting.note ) );
