@@ -22,7 +22,8 @@ const PAGES = [
   { name: 'publications', out: 'publications', path: '/publications' },
   { name: 'Legislative', out: 'legislative', path: '/legislative' },
   { name: 'about', out: 'about', path: '/about' },
-  { name: 'ActiveSubgroups', out: 'activesubgroups', path: '/activesubgroups' },
+  // Hyphenated for readability and SEO; /activesubgroups redirects here.
+  { name: 'ActiveSubgroups', out: 'active-subgroups', path: '/active-subgroups' },
   { name: 'meetings', out: 'meetings', path: '/meetings' },
   { name: 'meetings-upcoming', out: 'meetings/upcoming', path: '/meetings/upcoming' },
 ];
@@ -142,8 +143,10 @@ const redirects = [
   ['/Legislative.html', '/legislative'],
   ['/Legislative', '/legislative'],
   ['/about.html', '/about'],
-  ['/ActiveSubgroups.html', '/activesubgroups'],
-  ['/ActiveSubgroups', '/activesubgroups'],
+  ['/ActiveSubgroups.html', '/active-subgroups'],
+  ['/ActiveSubgroups', '/active-subgroups'],
+  // the page was first published as /activesubgroups before it was renamed
+  ['/activesubgroups', '/active-subgroups'],
   // Sower's breadcrumb looks up a page's parent as "/<folder>/", so /meetings/upcoming asks
   // for /meetings/. Redirect it to the archive page so the crumb resolves instead of a 404.
   ['/meetings/', '/meetings'],
