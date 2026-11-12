@@ -113,8 +113,22 @@ const sheet = (data) => `${JSON.stringify({
   total: data.length, offset: 0, limit: data.length, data, ':type': 'sheet',
 }, null, 2)}\n`;
 
+// Wording corrections to the handoff pages, approved by the site owner. Each must match exactly once.
+const TYPO_2016 = [">Nebraska Children's Comission 2016 Annual Report<", ">Nebraska Children's Commission 2016 Annual Report<"];
+const PAGE_FIXES = {
+  publications: [TYPO_2016],
+  about: [TYPO_2016],
+};
+function applyFixes(name, text, fixes) {
+  return (fixes || []).reduce((out, [from, to]) => {
+    const count = out.split(from).length - 1;
+    if (count !== 1) throw new Error(`Fix for ${name} matched ${count} times: ${from}`);
+    return out.replace(from, to);
+  }, text);
+}
+
 PAGES.forEach((p) => {
-  const plain = fs.readFileSync(path.join(SRC, 'plain', `${p.name}.plain.html`), 'utf8');
+  const plain = applyFixes(p.name, fs.readFileSync(path.join(SRC, 'plain', `${p.name}.plain.html`), 'utf8'), PAGE_FIXES[p.name]);
   const doc = fs.readFileSync(path.join(SRC, `${p.name}.html`), 'utf8');
   const body = slugIds(rewrite(plain)).replace(/\s*$/, '\n');
   const depth = p.out.split('/').length - 1;
