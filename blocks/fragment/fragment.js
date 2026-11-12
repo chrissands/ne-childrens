@@ -25,9 +25,12 @@ export async function loadFragment( path ) {
 			container.classList.add( 'fragment' );
 			container.innerHTML = await resp.text();
 
-			// reset base path for media to fragment base
+			// reset base path for media to fragment base: Edge Delivery media (./media_...) and
+			// any other single relative URL (e.g. img/logo.png in locally authored fragments)
+			const isRelative = ( value ) => value && !/^([a-z][a-z0-9+.-]*:|\/|#)/i.test( value ) && !/[\s,]/.test( value.trim() );
 			const resetAttributeBase = ( tag, attr ) => {
-				container.querySelectorAll( `${tag}[${attr}^="./media_"]` ).forEach( ( elem ) => {
+				container.querySelectorAll( `${tag}[${attr}]` ).forEach( ( elem ) => {
+					if ( !isRelative( elem.getAttribute( attr ) ) ) return;
 					elem[attr] = new URL( elem.getAttribute( attr ), new URL( path, window.location ) ).href;
 				} );
 			};

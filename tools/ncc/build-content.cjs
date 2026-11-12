@@ -39,20 +39,19 @@ const ASSETS = [
   ['tile-22.jpg', 'img/tiles/22.jpg'],
 ];
 
-const IMG_BASE = 'https://content.da.live/chrissands/ne-childrens/img/';
-
 // Data sheets, copied as-is (EDS sheet JSON; upcoming-meetings is a multi-sheet workbook).
 const DATA = ['meetings.json', 'upcoming-meetings.json'];
 
-function rewrite(html) {
+function rewrite(html, depth = 0) {
   let out = html.replace(/href="\.\/([A-Za-z-]+)\.html(#[^"]*)?"/g, (m, name, hash) => {
     const page = PAGES.find((p) => p.name === name);
     if (!page) throw new Error(`Unknown relative link ${m}`);
     return `href="${page.path}${hash || ''}"`;
   });
-  // Images point at the copies uploaded to Document Authoring (same paths as on the old site).
-  // Edge Delivery ingests them from there; site-relative /img/ paths are not resolved.
-  out = out.replace(/https:\/\/childrens\.nebraska\.gov\/img\//g, IMG_BASE);
+  // Images point at the copies under img/ (same paths as on the old site), relative to the page,
+  // so they resolve to content/img/ in the local preview and to the Document Authoring copies
+  // on Edge Delivery. Site-root paths (/img/...) are not resolved by Edge Delivery.
+  out = out.replace(/https:\/\/childrens\.nebraska\.gov\/img\//g, `${'../'.repeat(depth)}img/`);
   const leftover = out.match(/(href|src|srcset)="\.\/[^"]*"/g);
   if (leftover) throw new Error(`Unrewritten relative refs: ${leftover.join(', ')}`);
   return out;
@@ -130,8 +129,8 @@ function applyFixes(name, text, fixes) {
 PAGES.forEach((p) => {
   const plain = applyFixes(p.name, fs.readFileSync(path.join(SRC, 'plain', `${p.name}.plain.html`), 'utf8'), PAGE_FIXES[p.name]);
   const doc = fs.readFileSync(path.join(SRC, `${p.name}.html`), 'utf8');
-  const body = slugIds(rewrite(plain)).replace(/\s*$/, '\n');
   const depth = p.out.split('/').length - 1;
+  const body = slugIds(rewrite(plain, depth)).replace(/\s*$/, '\n');
   write(`${p.out}.plain.html`, body + metadataBlock(doc, depth));
 });
 
