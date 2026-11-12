@@ -133,7 +133,23 @@ ASSETS.forEach(([from, to]) => {
   console.log(`content/${to}`);
 });
 
-DATA.forEach((f) => write(`data/${f}`, fs.readFileSync(path.join(SRC, 'data', f), 'utf8')));
+// Corrections to the handoff data, approved by the site owner. Each must match exactly once.
+const DATA_FIXES = {
+  'upcoming-meetings.json': [
+    // Jan 28, 2027 is in Central Standard Time; the old page said CDT.
+    ['"when": "9:30 AM to 11:30 AM (CDT)"', '"when": "9:30 AM to 11:30 AM (CST)"'],
+  ],
+};
+
+DATA.forEach((f) => {
+  let text = fs.readFileSync(path.join(SRC, 'data', f), 'utf8');
+  (DATA_FIXES[f] || []).forEach(([from, to]) => {
+    const count = text.split(from).length - 1;
+    if (count !== 1) throw new Error(`Data fix for ${f} matched ${count} times: ${from}`);
+    text = text.replace(from, to);
+  });
+  write(`data/${f}`, text);
+});
 
 // Redirects sheet: old .html and mixed-case paths to the new site paths, then the meeting
 // redirects from the handoff (old meeting pages to /meetings and /meetings/upcoming).
